@@ -1,0 +1,5 @@
+<script language="JScript" runat="server">
+  function print(arg) {
+    Response.write(arg);
+  }
+</script>
