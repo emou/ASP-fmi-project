@@ -14,6 +14,15 @@
 	  return res;
   }
 
+  function array_to_html(arr) {
+    res = "<ul>";
+    for(v in arr) {
+	res += "<li>" + v + ": " + arr[v] + "</li>";
+    }
+    res += "</ul>";
+    return res;
+  }
+
   Response.Charset = "UTF-8";
   Response.Codepage = 65001;
 %>
