@@ -8,11 +8,8 @@
 	  print("baba: " + Request.form("value"));
   }
   else if(method=="GET") {
-	  print("Това кирилица ли е?");
-	  var contacts = db._conn.execute("select * from contacts;");
-	  var rows = DB.getRows(contacts);
-	  var rows_html = array_to_html(rows);
-	  var server_vars = array_to_html(rsToArray(Request.ServerVariables));
+	print("Users count: " + User.count() + "<br/>");
+	print("Users first: " + User.first().email + "<br/>");
   }
 
   print('<form action="default.asp" method="POST"><input type="text" name="value"/><input type="button" value="Submit"/></form></body>');

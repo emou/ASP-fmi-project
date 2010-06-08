@@ -29,7 +29,7 @@ DB.Connection = function(dsn, exec_on_start) {
 	if (this._conn.errors.count==0) {
 	  this._conn.open("DSN=" + dsn);
 	  if(exec_on_start) {
-	    this._conn.execute(exec_on_start);
+	    this.execute(exec_on_start);
 	  }
 	}
 	else {
@@ -43,23 +43,26 @@ DB.Connection.prototype = {
   },
 
   columns: function(table_name) {
-    var rs      = this._conn.OpenSchema(4); // '4' means: return columns
+    var rs      = this._conn.OpenSchema(4, [null, null, table_name]); // 4 means: return columns
     var rows    = DB.getRows(rs);
     var columns = map(rows, function(i,row){ return new DB.Column(row); });
-    if (table_name != undefined)
-    columns = filter(columns, function(column){ return column.table_name == table_name; });
     return columns;
+  },
+
+  execute: function(sql) {
+    return this._conn.execute(sql);
   }
 
 };
 
 
 //Returns a new meta class, representing a database table
-DB.model = function(conn, table_name) {
+DB.model = function(db, table_name) {
   function klass(attributes) {
       this.update_attributes(attributes);
   }
 
+ klass.db  	  = db;
  klass.table_name = table_name;
  klass.columns    = db.columns(table_name);
 
@@ -106,14 +109,15 @@ DB.model = function(conn, table_name) {
 
  // class functions
  klass.query = function(sql){
-   return DB.getRows(klass.db._conn().Execute(sql));
+   return DB.getRows(klass.db.execute(sql));
  };
+
  klass.nonquery = function(sql){
-   klass.db._conn().Execute(sql);
+   klass.db.execute(sql);
  };
 
  klass.all = function(options){
-   var sql = "select * from " + klass.table_name;
+   var sql = 'select * from "' + klass.table_name + '"';
  
    if (options != null){
      each(options, function(key, value){
@@ -130,7 +134,7 @@ DB.model = function(conn, table_name) {
  };
 
  klass.first = function(options){
-   if (options == null) options = {};
+   options = options || {};
    options.limit = 1;
    return klass.all(options)[0];
  };
@@ -145,9 +149,10 @@ DB.model = function(conn, table_name) {
  };
 
  klass.count = function(options){
-   if (options == null) options = {};
-   var rows = klass.query('select count(*) from ' + klass.table_name);
-   return rows[0]['count(*)'];
+   options = options || {};
+   sql = 'select count(*) from "' + klass.table_name + '"';
+   var rows = klass.query(sql);
+   return rows[0]['count'];
  };
 
  return klass;
