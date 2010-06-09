@@ -251,7 +251,7 @@ CREATE  TABLE "CartItem" (
   "count" INT NOT NULL DEFAULT 1 ,
   "TicketCategory_id" INT NOT NULL ,
   "Cart_Client_User_email" VARCHAR(100) NOT NULL ,
-  PRIMARY KEY ("Cart_User_email", "TicketCategory_id", "Cart_Client_User_email") ,
+  PRIMARY KEY ("TicketCategory_id", "Cart_Client_User_email") ,
   CONSTRAINT "fk_CartItem_TicketCategory"
     FOREIGN KEY ("TicketCategory_id" )
     REFERENCES "TicketCategory" ("id" )

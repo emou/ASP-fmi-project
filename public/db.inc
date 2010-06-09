@@ -1,21 +1,57 @@
 <!-- #include FILE="util.inc" -->
 <% 
 var DB = {
-  getRows: function(recordset){
+  getRows: function(recordset) {
     var rows = [];
     if (recordset.EOF == true) return rows;
+
     recordset.MoveFirst()
-    while (recordset.EOF != true){
+    while (recordset.EOF != true) {
       var attributes = {};
+
       for (var i = 0; i<recordset.Fields.Count; i++){
         var field = recordset.Fields(i);
         attributes[field.name] = field.value;
       }
+
       rows[rows.length] = attributes;
       recordset.MoveNext();
+
     }
     return rows;
+  },
+
+  where_clause: function(values, opts) {
+      op=(opts && opts['or'])?' OR ':' AND ';
+      sql='WHERE ';
+      params=[];
+
+      for(var k in values) {
+        var val=values[k];
+        if(k==null || val==null) {
+            throw new Error("Empty parameters for a where clause!");
+        }
+        params.push(k + '=' + DB.quote_value(val));
+      }
+
+      return sql + params.join(op);
+  },
+
+  tuple: function(names) {
+  	return "(" + names.join() + ")";
+  },
+
+  quote_table: function(name) {
+  	return '"' + name + '"';
+  },
+
+  quote_value: function(val) {
+  	if(typeof(val) == 'string' || val instanceof String) {
+		return "'" + val + "'";
+	}
+	return val;
   }
+
 };
 
 DB.Column = function(options) {
@@ -27,13 +63,11 @@ DB.Column = function(options) {
 DB.Connection = function(dsn, exec_on_start) {
 	this._conn = Server.createObject("ADODB.Connection");
 	if (this._conn.errors.count==0) {
+	  /* throws an exception if cannot connect */
 	  this._conn.open("DSN=" + dsn);
 	  if(exec_on_start) {
 	    this.execute(exec_on_start);
 	  }
-	}
-	else {
-	  throw new Error("Could not connect to the database");
 	}
 };
 
@@ -55,108 +89,116 @@ DB.Connection.prototype = {
 
 };
 
-
 //Returns a new meta class, representing a database table
 DB.model = function(db, table_name) {
-  function klass(attributes) {
+    function klass(attributes) {
       this.update_attributes(attributes);
-  }
+    };
 
- klass.db  	  = db;
- klass.table_name = table_name;
- klass.columns    = db.columns(table_name);
+    klass.db  	     = db;
+    klass.table_name = table_name;
+    klass.columns    = db.columns(table_name);
 
- // instance methods
- klass.prototype = {
-   init: function(attributes){
-   },
-   update_attributes: function(attributes){
-     for (var key in attributes) this[key] = attributes[key];
-   },
-   db_attributes: function(){
-     var attrs = {};
-     for (var i in klass.columns){
-       var name = klass.columns[i].name;
-       if (name != 'id' && this[name] != null)
-         attrs[name] = this[name];
-     }
-     return attrs;
-   },
-   save: function(){
-     var sql = '';
+    rs               = klass.db._conn.OpenSchema(28, [null, null, klass.table_name]); // 28 means: return primary keys
+    klass.primary_keys = []
+    while (rs.EOF != true) {
+      var attributes = {};
 
-     if (this.id != null){
-       
-       // UPDATE
-       sql = 'UPDATE ' + klass.table_name + ' SET ';
-       each(this.db_attributes(), function(key, value){
-         if (key != 'id')
-           sql = sql + key + '=' + JSON.stringify(value) + ' ';
-       });
-       sql = sql + 'WHERE id=' + this.id;
+      klass.primary_keys.push(' ' + rs('column_name')); // "cast" to string
+      rs.MoveNext();
+    }
 
-     } else {
-     
-       // INSERT  
-       sql = 'INSERT INTO ' + klass.table_name;
-       sql = sql + ' (' + map(this.db_attributes(), function(name,value){ return name; }).join(', ') + ') ';
-       sql = sql + 'VALUES (' + map(this.db_attributes(), function(name,value){ return JSON.stringify(value); }).join(', ') + ')';
-     
-     }
-     klass.nonquery(sql); 
-   }
- };
+    // instance methods
+    klass.prototype = {
+        init: function(attributes) {
+        },
 
- // class functions
- klass.query = function(sql){
-   return DB.getRows(klass.db.execute(sql));
- };
+        update_attributes: function(attributes) {
+            for (var key in attributes) this[key] = attributes[key];
+        },
 
- klass.nonquery = function(sql){
-   klass.db.execute(sql);
- };
+        db_attributes: function() {
+            var attrs = {};
+            for (var i in klass.columns) {
+                var name = klass.columns[i].name;
+                if (this[name] != null)
+                    attrs[name] = this[name];
+            }
+            return attrs;
+        },
 
- klass.all = function(options){
-   var sql = 'select * from "' + klass.table_name + '"';
- 
-   if (options != null){
-     each(options, function(key, value){
-       if (value != null && key != 'limit')
-         sql = sql + " WHERE " + key + " = " + JSON.stringify(value);
-     });
-     
-     if (options.limit != null) sql = sql + " LIMIT " + options.limit;
-   }
+        save: function(update) {
+            var sql = '';
+            var quoted_table_name = DB.quote_table(klass.table_name);
+            db_attrs = this.db_attributes();
+            cols = [];
+            vals = [];
 
-   return map(klass.query(sql), function(i,row){
-     return new klass(row);
-   });
- };
+            for(var k in db_attrs) {
+                cols.push(k);
+                vals.push(DB.quote_value(db_attrs[k]));
+            }
 
- klass.first = function(options){
-   options = options || {};
-   options.limit = 1;
-   return klass.all(options)[0];
- };
+            if(update) {
+                sql = 'update ' + quoted_table_name + ' where ';// + this.values_for(this.primary_keys);
+                throw Error("Update not yet implemented");
+            }
+            else {
+                sql  = 'insert into ' + quoted_table_name;
+                sql += DB.tuple(cols) + ' values ' + DB.tuple(vals);
+                print(sql);
+                //db.execute(sql);
+            }
+        }
 
- klass.get = function(id){
-   return klass.first({ id: id });
- };
+    };
 
- klass.create = function(attributes){
-   var model = new klass(attributes);
-   model.save();
- };
+    // class functions
+    klass.query = function(sql) {
+        return DB.getRows(klass.db.execute(sql));
+    };
 
- klass.count = function(options){
-   options = options || {};
-   sql = 'select count(*) from "' + klass.table_name + '"';
-   var rows = klass.query(sql);
-   return rows[0]['count'];
- };
+    klass.nonquery = function(sql) {
+        klass.db.execute(sql);
+    };
 
- return klass;
+    klass.all = function(filter, opts) {
+        var sql = 'select * from "' + klass.table_name + '" ';
+
+        if (filter) {
+            sql += DB.where_clause(filter, opts);
+        }
+
+        if (opts && opts.limit) {
+            //limit=0 doesn't make any sense
+            sql += " LIMIT " + opts.limit;
+        }
+
+        return map(klass.query(sql), function(i,row) { return new klass(row); });
+    };
+
+    klass.first = function(filter, options) {
+        options = options || {};
+        options.limit = 1;
+        return klass.all(filter, options)[0];
+    };
+
+    klass.get = function(id) {
+        return klass.first({ id: id });
+    };
+
+    klass.create = function(attributes) {
+        var model = new klass(attributes);
+        model.save();
+    };
+
+    klass.count = function(options) {
+        options = options || {};
+        sql = 'select count(*) from ' + DB.quote_table(klass.table_name);
+        var rows = klass.query(sql);
+        return rows[0]['count'];
+    };
+    return klass;
 };
-
 
 %>

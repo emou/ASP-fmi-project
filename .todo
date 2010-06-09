@@ -3,8 +3,11 @@
     <note priority="medium" time="1275761707" done="1275762768">
         Add trigger on new orderitem to mark corresponding ticket as unavailable.
     </note>
-    <note priority="veryhigh" time="1275905377">
+    <note priority="veryhigh" time="1275905377" done="1276102491">
         Figure out importing - server side includes, .execute method, &lt;script&gt; tag?
+        <comment>
+            I think I got it - #include does what I want.
+        </comment>
     </note>
     <note priority="veryhigh" time="1275956518">
         Add an on_start function that initializes the mappings (mappings.js)? Revisit scopes: Application object == global scope?
@@ -17,5 +20,8 @@
     </note>
     <note priority="medium" time="1275761808">
         Add trigger on new/deleted administrator to mark corresponding user as admin/not admin.
+    </note>
+    <note priority="medium" time="1276102473">
+        Figure out how to get the key attributes of a table.
     </note>
 </todo>
