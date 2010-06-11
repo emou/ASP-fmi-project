@@ -21,20 +21,32 @@ var DB = {
     return rows;
   },
 
-  where_clause: function(values, opts) {
-      op=(opts && opts['or'])?' OR ':' AND ';
-      sql='WHERE ';
-      params=[];
-
+  _conditions: function(values) {
+      var params=[];
       for(var k in values) {
         var val=values[k];
         if(k==null || val==null) {
-            throw new Error("Empty parameters for a where clause!");
+            throw new Error("Empty parameters while building conditions for query!");
         }
         params.push(k + '=' + DB.quote_value(val));
       }
 
-      return sql + params.join(op);
+      return params;
+  },
+
+  where_clause: function(values, opts) {
+      if(!values) return "";
+      var op=(opts && opts['or'])?' or ':' and ';
+      var sql=' where ';
+
+      return sql + DB._conditions(values).join(op);
+  },
+
+  set_clause: function(values, opts) {
+        if(!values) return "";
+        var sql=' set ';
+
+        return sql + DB._conditions(values).join(' ');
   },
 
   tuple: function(names) {
@@ -61,14 +73,17 @@ DB.Column = function(options) {
 };
 
 DB.Connection = function(dsn, exec_on_start) {
-	this._conn = Server.createObject("ADODB.Connection");
-	if (this._conn.errors.count==0) {
-	  /* throws an exception if cannot connect */
+    try {
+      this._conn = Server.createObject("ADODB.Connection");
 	  this._conn.open("DSN=" + dsn);
 	  if(exec_on_start) {
 	    this.execute(exec_on_start);
 	  }
 	}
+    catch(expection) {
+      print("Could not connect to the DB");
+      Response.end;
+    }
 };
 
 DB.Connection.prototype = {
@@ -104,33 +119,41 @@ DB.model = function(db, table_name) {
     while (rs.EOF != true) {
       var attributes = {};
 
-      klass.primary_keys.push(' ' + rs('column_name')); // "cast" to string
+      klass.primary_keys.push(rs('column_name').value); // "cast" to string
       rs.MoveNext();
     }
 
     // instance methods
     klass.prototype = {
-        init: function(attributes) {
-        },
-
         update_attributes: function(attributes) {
             for (var key in attributes) this[key] = attributes[key];
         },
 
-        db_attributes: function() {
+        db_attributes: function(opts) {
+            var cols = (opts && opts['pks_only'])? klass.primary_keys :
+                                                  map(klass.columns, function(c) { return c.name });
+                                                  throw Error("db_attributes not yet implemented");
             var attrs = {};
-            for (var i in klass.columns) {
-                var name = klass.columns[i].name;
-                if (this[name] != null)
-                    attrs[name] = this[name];
+            for (var i in cols) {
+                var attr = cols[i];
+                if (this[attr])
+                    attrs[attr] = this[attr];
             }
             return attrs;
         },
 
-        save: function(update) {
+        pk_attributes: function() {
+            return this.db_attributes({'pks_only': true});
+        },
+
+        save: function() {
             var sql = '';
             var quoted_table_name = DB.quote_table(klass.table_name);
+
             db_attrs = this.db_attributes();
+            if(db_attrs == {})
+                return null;
+
             cols = [];
             vals = [];
 
@@ -139,21 +162,37 @@ DB.model = function(db, table_name) {
                 vals.push(DB.quote_value(db_attrs[k]));
             }
 
-            if(update) {
-                sql = 'update ' + quoted_table_name + ' where ';// + this.values_for(this.primary_keys);
-                throw Error("Update not yet implemented");
+            if(this.exists()) {
+                sql = 'update ' + quoted_table_name;// + this.values_for(this.primary_keys);
+                sql+= DB.set_clause(db_attrs);
+                sql+= DB.where_clause(this.pk_attributes());
             }
             else {
                 sql  = 'insert into ' + quoted_table_name;
                 sql += DB.tuple(cols) + ' values ' + DB.tuple(vals);
-                print(sql);
                 //db.execute(sql);
             }
+            debug(sql);
+        },
+
+        exists: function() {
+            filter={};
+            pks=klass.primary_keys;
+            /* Get the values for the primary-key attributes */
+            for(var i in pks) {
+                pk = pks[i];
+                if(!this[pk]) {
+                    return false;
+                }
+                filter[pk]=this[pk];
+            }
+            /* Check if there are rows with those primary-key values */
+            return klass.count(filter)>0;
         }
 
     };
 
-    // class functions
+    // class methods
     klass.query = function(sql) {
         return DB.getRows(klass.db.execute(sql));
     };
@@ -177,14 +216,17 @@ DB.model = function(db, table_name) {
         return map(klass.query(sql), function(i,row) { return new klass(row); });
     };
 
-    klass.first = function(filter, options) {
-        options = options || {};
-        options.limit = 1;
-        return klass.all(filter, options)[0];
+    klass.first = function(filter, opts) {
+        opts = opts || {};
+        opts.limit = 1;
+        return klass.all(filter, opts)[0];
     };
 
-    klass.get = function(id) {
-        return klass.first({ id: id });
+    klass.get = function(pks) {
+        fst = klass.first(pks);
+        if(!fst)
+            throw Error("Потребителят не съществува!");
+        return fst;
     };
 
     klass.create = function(attributes) {
@@ -192,12 +234,14 @@ DB.model = function(db, table_name) {
         model.save();
     };
 
-    klass.count = function(options) {
-        options = options || {};
-        sql = 'select count(*) from ' + DB.quote_table(klass.table_name);
+    klass.count = function(filter, opts) {
+        opts = opts || {};
+        var sql = 'select count(*) from ' + DB.quote_table(klass.table_name);
+        sql += DB.where_clause(filter, opts);
         var rows = klass.query(sql);
         return rows[0]['count'];
     };
+
     return klass;
 };
 

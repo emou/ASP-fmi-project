@@ -1,6 +1,10 @@
 <%
-  function print(args) {
-    Response.write(args);
+  function print(arg) {
+     Response.write(arg);
+  }
+
+  function debug(arg) {
+      Response.write(arg + "<br/>");
   }
 
   function rsToArray(shit) {
@@ -40,14 +44,12 @@
     return to_return;
   }
 
-  function filter( collection, block ){
+  function select( collection, block ){
     var to_return = [];
     each(collection, function(key, value){
-      if (block(value) == true) to_return[to_return.length] = value;
+      if (block(value) == true) to_return.push(value);
     });
     return to_return;
   }
 
-  Response.Charset = "UTF-8";
-  Response.Codepage = 65001;
 %>

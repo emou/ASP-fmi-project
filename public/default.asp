@@ -1,21 +1,32 @@
 <%@ CODEPAGE=65001 %>
-<!-- #include FILE="models.inc" -->
+<!-- #include FILE="init.inc" -->
+<!-- #include FILE="md5.inc" -->
 <%
-  var results = Server.createObject("ADODB.Recordset");
-  var method = Request.ServerVariables("REQUEST_METHOD");
 
   if(method=="POST") {
-	  print("baba: " + Request.form("value"));
+	  debug("baba: " + Request.form("value"));
+      users = User.all();
+      for(var i in users) {
+        user = users[i];
+        user.set_password(user.email.split('@')[0]);
+        user.save();
+      }
   }
   else if(method=="GET") {
-        print("Users count: " + User.count() + "<br/>");
-	print("First user's email: " + User.first().email + "<br/>");
-	var user = User.first();
-	user.first_name = 'Emo';
-	print("Primary keys of CartItem: " + CartItem.primary_keys + "<br/>");
-	user.save();
-	print("First user's first name: " + User.first().first_name + "<br/>");
+//        debug("Users count: " + User.count() + "<br/>");
+//        debug("First user's email: " + User.first().email + "<br/>");
+//        var user = User.first();
+//        user.first_name = 'Emo';
+//        debug("Primary keys of CartItem: " + CartItem.primary_keys + "<br/>");
+//        user.save();
+//        debug("User exists?: " + user.exists() + "<br/>");
+//        debug("Authenticate user: " + User.authenticate('estanchev@mail.ru', '').email);
+//      user.email = 'Fucker';
+//      debug("User exists?: " + user.exists() + "<br/>");
+//        all_users = User.all();
+//        debug("First user's first name: " + User.first().first_name + "<br/>");
+//        debug("hash of foo: " + MD5('foo'));
   }
 
-  print('<form action="default.asp" method="POST"><input type="text" name="value"/><input type="button" value="Submit"/></form></body>');
+  debug('<form action="default.asp" method="POST"><input type="text" name="value"/><input type="button" value="Submit"/></form></body>');
 %>
