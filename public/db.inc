@@ -80,7 +80,7 @@ DB.Connection = function(dsn, exec_on_start) {
         this.execute(exec_on_start);
       }
     }
-    catch(expection) {
+    catch(excection) {
       print("Could not connect to the DB");
       Response.end;
     }
@@ -147,21 +147,21 @@ DB.model = function(db, table_name) {
         },
 
         save: function(update) {
-            var sql = '';
             var quoted_table_name = DB.quote_table(klass.table_name);
 
-            db_attrs = this.db_attributes();
+            var db_attrs = this.db_attributes();
             if(db_attrs == {})
                 return null;
 
-            cols = [];
-            vals = [];
+            var cols = [];
+            var vals = [];
 
             for(var k in db_attrs) {
                 cols.push(k);
                 vals.push(DB.quote_value(db_attrs[k]));
             }
 
+            var sql = '';
             if(update || this.exists()) {
                 sql = 'update ' + quoted_table_name;
                 sql+= DB.set_clause(db_attrs);
@@ -224,7 +224,7 @@ DB.model = function(db, table_name) {
     klass.get = function(pks) {
         fst = klass.first(pks);
         if(!fst)
-            throw Error("User does not exist!");
+            throw new Error("User does not exist!");
         return fst;
     };
 

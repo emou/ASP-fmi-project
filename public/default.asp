@@ -24,3 +24,5 @@
 
   debug('<form action="default.asp" method="POST"><input type="text" name="value"/><input type="button" value="Submit"/></form></body>');
 %>
+
+<%= flash %>

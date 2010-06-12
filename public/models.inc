@@ -1,5 +1,6 @@
 <!-- #include FILE="db.inc" -->
 <!-- #include FILE="settings.inc" -->
+<!-- #include FILE="md5.inc" -->
 <%
   db             = new DB.Connection("PostgreSQL35W",
                                    "SET search_path TO tickets;");
@@ -23,26 +24,27 @@
   */
   User._hash_pass = function(pass) {
     return MD5(Settings.secret + pass + 'bubble' + Settings.secret);
-  }
+  };
 
   /* Checks if an email and password combination is a valid login.
    * Returns the corresponding user on success.
    */
-  User.authenticate=function(email, pass) {
+  User.authenticate = function(email, pass) {
     var user = User.get({'email': email});
     if( !user.exists() ) {
         throw Error("A user with that email address does not exist!");
     }
     else {
-        if ( User._hash_pass(pass) != user.password )
+        if ( User._hash_pass(pass) != user.password ) {
             throw Error("Wrong password!"); 
-        return user;
+        }
     }
-  }
+    return user;
+  };
 
-  /* Set the user's password. Does not save the user! */
+  /* Sets the user's password. Does not save the user! */
   User.prototype.set_password=function(pass) {
     this.password = User._hash_pass(pass);
-  }
+  };
 
 %>

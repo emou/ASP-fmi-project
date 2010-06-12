@@ -72,6 +72,12 @@ Object.prototype.toString = function(open_brace, close_brace) {
     return str;
 };
 
+function update_attributes(dest, src) {
+    for(var i in src) {
+        dest[i] = src[i];
+    }
+};
+
 String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
 };

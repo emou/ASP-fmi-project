@@ -1,26 +1,18 @@
 <!-- #include FILE="init.inc" -->
 <!-- #include FILE="form.inc" -->
 <%
-if(false) {
-    var session_email = Session("user_email");
-    if (session_email) {
-        Session("flash") = "Вече сте се вписали!";
-    }
-    else {
-        try {
-            user = User.authenticate(Form('email'), Form('password'));
-        }
-        catch(error)
-        {
-            //Session("flash") = "Грешна парола или потребителски email!");
-            //Invalid syntax
-        }
-
-        session_email = email; // User logged in!
+var form;
+if(method=="POST") {
+    form = new LoginForm({}, Request);
+    if(form.valid()) {
+        Session("email") = form.save().email;
+        Session("flash") = "Вие се вписахте успешно като " + Session("email") + "!";
+        Response.Redirect("default.asp");      
     }
 }
-
-form = new LoginForm();
+else {
+    form = new LoginForm();
+}
 %>
 
 <%= form %>
