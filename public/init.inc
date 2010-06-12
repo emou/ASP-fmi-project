@@ -1,4 +1,4 @@
-<!-- This file is included on every single page -->
+<%@ CODEPAGE=65001 %>
 <!-- #include FILE="db.inc" -->
 <!-- #include FILE="vars.inc" -->
 <!-- #include FILE="models.inc" -->

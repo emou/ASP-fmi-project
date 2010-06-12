@@ -31,24 +31,18 @@
   User.authenticate=function(email, pass) {
     var user = User.get({'email': email});
     if( !user.exists() ) {
-        throw Error("A user with such an email does not exist!");
+        throw Error("A user with that email address does not exist!");
     }
     else {
-        if ( User._hash_pass(pass) != user.password)
+        if ( User._hash_pass(pass) != user.password )
             throw Error("Wrong password!"); 
         return user;
     }
-  }
-
-  /* Registers a new user */
-  User.prototype.register=function() {
-    throw Error("Register not yet implemented"); 
   }
 
   /* Set the user's password. Does not save the user! */
   User.prototype.set_password=function(pass) {
     this.password = User._hash_pass(pass);
   }
-
 
 %>

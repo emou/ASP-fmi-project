@@ -14,7 +14,7 @@ var DB = {
         attributes[field.name] = field.value;
       }
 
-      rows[rows.length] = attributes;
+      rows.push(attributes);
       recordset.MoveNext();
 
     }
@@ -46,22 +46,22 @@ var DB = {
         if(!values) return "";
         var sql=' set ';
 
-        return sql + DB._conditions(values).join(' ');
+        return sql + DB._conditions(values).join(', ');
   },
 
   tuple: function(names) {
-  	return "(" + names.join() + ")";
+    return "(" + names.join() + ")";
   },
 
   quote_table: function(name) {
-  	return '"' + name + '"';
+    return '"' + name + '"';
   },
 
   quote_value: function(val) {
-  	if(typeof(val) == 'string' || val instanceof String) {
-		return "'" + val + "'";
-	}
-	return val;
+    if(typeof(val) == 'string' || val instanceof String) {
+        return "'" + val + "'";
+    }
+    return val;
   }
 
 };
@@ -75,11 +75,11 @@ DB.Column = function(options) {
 DB.Connection = function(dsn, exec_on_start) {
     try {
       this._conn = Server.createObject("ADODB.Connection");
-	  this._conn.open("DSN=" + dsn);
-	  if(exec_on_start) {
-	    this.execute(exec_on_start);
-	  }
-	}
+      this._conn.open("DSN=" + dsn);
+      if(exec_on_start) {
+        this.execute(exec_on_start);
+      }
+    }
     catch(expection) {
       print("Could not connect to the DB");
       Response.end;
@@ -110,7 +110,7 @@ DB.model = function(db, table_name) {
       this.update_attributes(attributes);
     };
 
-    klass.db  	     = db;
+    klass.db         = db;
     klass.table_name = table_name;
     klass.columns    = db.columns(table_name);
 
@@ -130,9 +130,9 @@ DB.model = function(db, table_name) {
         },
 
         db_attributes: function(opts) {
-            var cols = (opts && opts['pks_only'])? klass.primary_keys :
-                                                  map(klass.columns, function(c) { return c.name });
-                                                  throw Error("db_attributes not yet implemented");
+            var cols = (opts && opts['pks_only']) ?
+                                                  klass.primary_keys :  //only primary keys
+                                                  map(klass.columns, function(c) { return klass.columns[c].name }); //all attributes
             var attrs = {};
             for (var i in cols) {
                 var attr = cols[i];
@@ -146,7 +146,7 @@ DB.model = function(db, table_name) {
             return this.db_attributes({'pks_only': true});
         },
 
-        save: function() {
+        save: function(update) {
             var sql = '';
             var quoted_table_name = DB.quote_table(klass.table_name);
 
@@ -162,33 +162,32 @@ DB.model = function(db, table_name) {
                 vals.push(DB.quote_value(db_attrs[k]));
             }
 
-            if(this.exists()) {
-                sql = 'update ' + quoted_table_name;// + this.values_for(this.primary_keys);
+            if(update || this.exists()) {
+                sql = 'update ' + quoted_table_name;
                 sql+= DB.set_clause(db_attrs);
                 sql+= DB.where_clause(this.pk_attributes());
             }
             else {
                 sql  = 'insert into ' + quoted_table_name;
                 sql += DB.tuple(cols) + ' values ' + DB.tuple(vals);
-                //db.execute(sql);
             }
-            debug(sql);
+
+            db.execute(sql);
         },
 
         exists: function() {
-            filter={};
-            pks=klass.primary_keys;
             /* Get the values for the primary-key attributes */
-            for(var i in pks) {
-                pk = pks[i];
-                if(!this[pk]) {
-                    return false;
-                }
-                filter[pk]=this[pk];
-            }
+            filter=this.pk_attributes();
+
             /* Check if there are rows with those primary-key values */
             return klass.count(filter)>0;
+        },
+
+        toString: function() {
+            str=Object.prototype.toString.call(this, '(', ')');
+            return klass.table_name + str;
         }
+
 
     };
 
@@ -202,7 +201,7 @@ DB.model = function(db, table_name) {
     };
 
     klass.all = function(filter, opts) {
-        var sql = 'select * from "' + klass.table_name + '" ';
+        var sql = 'select * from ' + DB.quote_table(klass.table_name) + ' ';
 
         if (filter) {
             sql += DB.where_clause(filter, opts);
@@ -225,7 +224,7 @@ DB.model = function(db, table_name) {
     klass.get = function(pks) {
         fst = klass.first(pks);
         if(!fst)
-            throw Error("Потребителят не съществува!");
+            throw Error("User does not exist!");
         return fst;
     };
 

@@ -1,16 +1,10 @@
-<%@ CODEPAGE=65001 %>
 <!-- #include FILE="init.inc" -->
 <!-- #include FILE="md5.inc" -->
 <%
 
   if(method=="POST") {
-	  debug("baba: " + Request.form("value"));
-      users = User.all();
-      for(var i in users) {
-        user = users[i];
-        user.set_password(user.email.split('@')[0]);
-        user.save();
-      }
+     var user = User.authenticate('estanchev@mail.ru', 'estanchev');
+     debug(user);
   }
   else if(method=="GET") {
 //        debug("Users count: " + User.count() + "<br/>");
