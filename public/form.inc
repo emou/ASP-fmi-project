@@ -1,47 +1,5 @@
+<!-- #include FILE="html.inc" -->
 <%
-/* A class representing an HTML tag.
- * Really simple.
- */
-function Tag(name, attributes, content) {
-    this.name = name;
-    this.attributes = attributes;
-    this.content = content?[content]:[];
-}
-
-Tag.prototype = {
-    append: function(piece) {
-        this.content.push(piece);
-    },
-
-    toString: function() {
-        return '<' + this.name + Tag.stringify_attributes(this.attributes) + '>' + this.content.join('') + '\n</' + this.name + '>';
-    }
-};
-
-/* A class representing an empty HTML tag.
- * For example: <input name="..." type="..." />
- * as opposed to <input name="..." type=".."></input>.
- * Inherits Tag.
- */
-function EmptyTag(name, attributes) {
-    Tag.call(this, name, attributes);
-}
-
-EmptyTag.prototype = {
-    toString: function() {
-        return '<' + this.name + Tag.stringify_attributes(this.attributes) + '/>\n';
-    }
-};
-
-Tag.stringify_attributes = function(attributes) {
-    var str = '';
-    for(var k in attributes) {
-        if(attributes[k]) {
-            str += ' ' + k + '="' + attributes[k] + '"';
-        }
-    }
-    return str;
-};
 
 /* A class representing a validation error in a form */
 function FormError(msg) {
@@ -71,12 +29,16 @@ function Form(opts, req, field_defs) {
         throw new Error("You need to provide an action for the form.");
     }
 
-    this.attributes = {
-        method: opts['method'] || 'POST',
-        action: opts['action']
-    };
+    this.name = opts['name'];
+    delete opts['name'];
 
     this.submit = opts['submit'] || 'Изпрати';
+    delete opts['submit'];
+
+    opts['method'] = opts['method'] || 'post';
+
+
+    this.attributes = opts;
 
     this.errors = {};
 }
@@ -91,8 +53,20 @@ Form.prototype = {
     },
 
     toString: function() {
-        var res=new Tag('form', this.attributes);
-        if(this.errors) {
+        var form_tag=new Tag('form', this.attributes);
+
+        var res;
+        if(this.name) {
+            //Add a fieldset
+            res = new Tag('fieldset');
+            res.append(new Tag('legend', {}, this.name));
+            form_tag.append(res);
+        }
+        else {
+            res = form_tag;
+        }
+
+        if(this.errors.length) {
             var err_tag=new Tag('ul', {'class': 'form_errors'});
             for(i in this.errors) {
                 err_tag.append(new Tag('li', {}, this.errors[i]));
@@ -105,8 +79,8 @@ Form.prototype = {
                 f.mark_invalid();
             res.append(f);
         }
-        res.append(new Tag('input', {type: 'submit', value: this.submit}));
-        return res.toString();
+        res.append(new EmptyTag('input', {type: 'submit', value: this.submit}));
+        return form_tag.toString();
     },
 
     valid: function() {
@@ -223,7 +197,7 @@ LoginForm = make_form(
      {type: 'password', name: 'password', label: 'Парола'}
     ],
 
-    {action: 'login.asp', submit: 'Вход'}
+    {action: 'login.asp', submit: 'Вход', name: 'Вход', id: 'login_form'}
 );
 
 LoginForm.checks = {

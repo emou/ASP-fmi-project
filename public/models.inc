@@ -43,8 +43,22 @@
   };
 
   /* Sets the user's password. Does not save the user! */
-  User.prototype.set_password=function(pass) {
+  User.prototype.set_password = function(pass) {
     this.password = User._hash_pass(pass);
+  };
+
+  User.prototype.toString = function() {
+      return this.first_name + ' ' + this.family_name;
+  };
+
+  Event.prototype.toString = function() {
+      return this.name;
+  }
+
+  User.current = function() {
+      if(Session("email")) {
+          return User.get({email: Session("email")});
+      }
   };
 
 %>

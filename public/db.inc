@@ -1,4 +1,6 @@
 <!-- #include FILE="util.inc" -->
+<!-- #include FILE="html.inc" -->
+
 <% 
 var DB = {
   getRows: function(recordset) {
@@ -177,17 +179,28 @@ DB.model = function(db, table_name) {
 
         exists: function() {
             /* Get the values for the primary-key attributes */
-            filter=this.pk_attributes();
+            var filter=this.pk_attributes();
 
             /* Check if there are rows with those primary-key values */
             return klass.count(filter)>0;
         },
 
+        /* For debugging */
         toString: function() {
-            str=Object.prototype.toString.call(this, '(', ')');
+            var str=Object.prototype.toString.call(this, '(', ')');
             return klass.table_name + str;
-        }
+        },
 
+        link: function(content) {
+            var params = [];
+            var pk_attrs = this.pk_attributes();
+
+            for(var k in pk_attrs) {
+                params.push( k + '=' + pk_attrs[k] );
+            }
+
+            return new Tag('a', {href: klass.table_name + '.asp?' + params.join('&')}, content || this.name || this);
+        }
 
     };
 

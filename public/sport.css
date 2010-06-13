@@ -1,0 +1,39 @@
+body {
+    font-family: Georgia;
+}
+form input {
+    display: block;
+}
+
+#login_form {
+    width: 200px;
+    padding: 10px;
+}
+
+a {
+    color: #97B5FF;
+}
+
+#flash {
+    background-color: #BAFF70;
+    padding: 10px;
+    color: gray;
+}
+
+#logged {
+    width: 200px;
+    float: right;
+    background-color: #EBFFC1;
+    padding: 10px;
+    margin: 10px;
+}
+
+#logout_link {
+    display: block;
+}
+
+h1 {
+    background-color: #AFFFA7;
+    padding: 20px;
+    font-style: italic;
+}
