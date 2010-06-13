@@ -79,7 +79,7 @@ Form.prototype = {
                 f.mark_invalid();
             res.append(f);
         }
-        res.append(new EmptyTag('input', {type: 'submit', value: this.submit}));
+        res.append(new EmptyTag('input', {name: 'submit', type: 'submit', value: this.submit}));
         return form_tag.toString();
     },
 
@@ -165,7 +165,7 @@ Field.prototype = {
     toString: function(error) {
         var p_attrs = this.valid ? {} : {'class': 'invalid_field'};
         var p=new Tag('p', p_attrs);
-        label = new Tag('label', {'for': this.attributes['id']}, this.attributes['name']);
+        label = new Tag('label', {'for': this.attributes['id']}, this.label);
         p.append(label);
         p.append(new EmptyTag('input', this.attributes));
         return p.toString();

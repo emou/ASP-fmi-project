@@ -191,7 +191,7 @@ DB.model = function(db, table_name) {
             return klass.table_name + str;
         },
 
-        link: function(content) {
+        html_link: function(content) {
             var params = [];
             var pk_attrs = this.pk_attributes();
 
@@ -253,6 +253,7 @@ DB.model = function(db, table_name) {
         var rows = klass.query(sql);
         return rows[0]['count'];
     };
+
 
     return klass;
 };

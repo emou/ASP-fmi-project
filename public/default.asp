@@ -7,7 +7,7 @@
     var event_list = new Tag('ul', {id: 'events'});
 
     for(var i in events) {
-        event_list.append(new Tag('li', {}, events[i].link()));
+        event_list.append(new Tag('li', {}, events[i].html_link()));
     }
 
     blocks['content'] += event_list;
