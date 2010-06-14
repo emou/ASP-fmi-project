@@ -3,9 +3,10 @@
 
 <% 
 var DB = {
-  getRows: function(recordset) {
+  getRows: function(recordset, model) {
     var rows = [];
-    if (recordset.EOF == true) return rows;
+    if (recordset.EOF == true)
+        return rows;
 
     recordset.MoveFirst()
     while (recordset.EOF != true) {
@@ -16,21 +17,28 @@ var DB = {
         attributes[field.name] = field.value;
       }
 
-      rows.push(attributes);
+      if(model!=undefined) {
+          rows.push(new model(attributes));
+      }
+      else {
+          rows.push(attributes);
+      }
       recordset.MoveNext();
 
     }
     return rows;
   },
 
-  _conditions: function(values) {
+  _conditions: function(values, tab) {
       var params=[];
+      var prefix=(tab && (tab + ".")) || "";
+
       for(var k in values) {
         var val=values[k];
         if(k==null || val==null) {
             throw new Error("Empty parameters while building conditions for query!");
         }
-        params.push(k + '=' + DB.quote_value(val));
+        params.push(DB.quote_column(k) + '=' + DB.quote_value(val));
       }
 
       return params;
@@ -64,60 +72,101 @@ var DB = {
         return "'" + val + "'";
     }
     return val;
+  },
+
+  quote_column: function(col) {
+      return DB.quote_table(col);
   }
 
 };
 
 DB.Column = function(options) {
-  for (var key in options) {
-      this[key.toLowerCase().replace(/^column_/, '')] = options[key];
-  }
+    this.name = options['column_name'];
 };
 
-DB.Connection = function(dsn, exec_on_start) {
-    try {
-      this._conn = Server.createObject("ADODB.Connection");
-      this._conn.open("DSN=" + dsn);
-      if(exec_on_start) {
-        this.execute(exec_on_start);
-      }
+DB.Connection = function(dsn, exec_on_connect) {
+
+    this.dsn = dsn;
+    this.exec_on_connect = exec_on_connect;
+
+    /* Caching */
+    this.fk_table = {};
+
+    /* PostgreSQL specific */
+    var sql =  "select tc.constraint_name, tc.table_name,\
+                kcu.column_name, \
+                ccu.table_name AS foreign_table_name, \
+                ccu.column_name AS foreign_column_name \
+                from information_schema.table_constraints AS tc \
+                JOIN information_schema.key_column_usage AS kcu \
+                    ON tc.constraint_name = kcu.constraint_name \
+                JOIN information_schema.constraint_column_usage AS ccu \
+                    ON ccu.constraint_name = tc.constraint_name \
+                where constraint_type='FOREIGN KEY'";
+
+    this.connect();
+
+    for(var rs = this.execute(sql); rs.EOF != true; rs.MoveNext()) {
+        var t = rs('table_name').value;
+        var a = this.fk_table[t] || [];
+        a.push({
+                column: rs('column_name').value,
+                foreign_column: rs('foreign_column_name').value,
+                foreign_table: rs('foreign_table_name').value
+              });
+
+        this.fk_table[t] = a;
     }
-    catch(excection) {
-      print("Could not connect to the DB");
-      Response.end;
-    }
+
 };
 
 DB.Connection.prototype = {
-  model: function(table_name) {
-    return DB.model(this, table_name);
-  },
+    connect: function() {
+        try {
+            this._conn = Server.createObject("ADODB.Connection");
+            this._conn.open("DSN=" + this.dsn);
+        }
+        catch(excection) {
+            // Hide sensitive info
+            throw new Error("Could not connect to the DB");
+        }
 
-  columns: function(table_name) {
-    var rs      = this._conn.OpenSchema(4, [null, null, table_name]); // 4 means: return columns
-    var rows    = DB.getRows(rs);
-    var columns = map(rows, function(i,row){ return new DB.Column(row); });
-    return columns;
-  },
+        if(this.exec_on_connect) {
+            this.execute(this.exec_on_connect);
+        }
+    },
 
-  execute: function(sql) {
-    return this._conn.execute(sql);
-  }
 
+    model: function(table_name, opts) {
+        return DB.model(this, table_name, opts);
+    },
+ 
+    columns: function(table_name) {
+        var rs      = this._conn.OpenSchema(4, [null, null, table_name]); // 4 means: return columns
+        return DB.getRows(rs, DB.Column);
+    },
+ 
+    execute: function(sql) {
+        return this._conn.execute(sql);
+    }
+ 
 };
 
 //Returns a new meta class, representing a database table
-DB.model = function(db, table_name) {
+DB.model = function(db, table_name, opts) {
     function klass(attributes) {
       this.update_attributes(attributes);
     };
 
+    opts = opts || {};
+
+    klass.order = opts['order'];
+
     klass.db         = db;
     klass.table_name = table_name;
     klass.columns    = db.columns(table_name);
-
     rs               = klass.db._conn.OpenSchema(28, [null, null, klass.table_name]); // 28 means: return primary keys
-    klass.primary_keys = []
+    klass.primary_keys = [];
     while (rs.EOF != true) {
       var attributes = {};
 
@@ -170,8 +219,8 @@ DB.model = function(db, table_name) {
                 sql+= DB.where_clause(this.pk_attributes());
             }
             else {
-                sql  = 'insert into ' + quoted_table_name;
-                sql += DB.tuple(cols) + ' values ' + DB.tuple(vals);
+                sql = 'insert into ' + quoted_table_name;
+                sql+= DB.tuple(cols) + ' values ' + DB.tuple(vals);
             }
 
             db.execute(sql);
@@ -185,9 +234,57 @@ DB.model = function(db, table_name) {
             return klass.count(filter)>0;
         },
 
+        /* Returns the associated records in a many-to-one relationship for the many side.
+         * For example:
+         *      book.associated('Author');
+         * Does *not* support different roles (or multiple foreign keys for a single role) at the moment,
+         * but it would be easy to add this just by returning a 2D array of rows: one array per role.
+         * */
+        associated: function(table_name) {
+
+            table_name = table_name.capitalize();
+            var fks = klass.db.fk_table[klass.table_name];
+            var model_klass = eval(table_name);
+
+            /* Multiple foreign keys are possible, but *not supported* yet! */
+            for(var i in fks) {
+                var fk = fks[i];
+                if(fk.foreign_table == table_name) {
+                    var values = {};
+                    values[fk.foreign_column] = this[fk.column];
+                    return model_klass.first(values);
+                }
+            }
+
+            throw new Error("No foreign key found from table " + klass.table_name + " to table " + table_name + "!");
+        },
+
+        /* Returns the associated records in a many-to-many relationship.
+         * For example:
+         *      author.associated_set('Book');
+         * where book has a foreign key for one author
+         * */
+        associated_set: function(table_name) {
+
+            table_name = table_name.capitalize();
+            var fks = klass.db.fk_table[table_name];
+            var model_klass = eval(table_name);
+
+            for(var i in fks) {
+                var fk = fks[i];
+                if(fk.foreign_table == klass.table_name) {
+                    var values = {};
+                    values[fk.column] = this[fk.foreign_column];
+                    return model_klass.all(values);
+                }
+            }
+
+            //throw new Error("No foreign key found from table " + klass.table_name + " to table " + table_name + "!");
+        },
+
         /* For debugging */
         toString: function() {
-            var str=Object.prototype.toString.call(this, '(', ')');
+            var str = Object.prototype.toString.call(this, '(', ')');
             return klass.table_name + str;
         },
 
@@ -206,7 +303,7 @@ DB.model = function(db, table_name) {
 
     // class methods
     klass.query = function(sql) {
-        return DB.getRows(klass.db.execute(sql));
+        return DB.getRows(klass.db.execute(sql), klass);
     };
 
     klass.nonquery = function(sql) {
@@ -214,18 +311,24 @@ DB.model = function(db, table_name) {
     };
 
     klass.all = function(filter, opts) {
+        opts = opts || {};
         var sql = 'select * from ' + DB.quote_table(klass.table_name) + ' ';
 
         if (filter) {
             sql += DB.where_clause(filter, opts);
         }
 
-        if (opts && opts.limit) {
+        if (opts.limit) {
             //limit=0 doesn't make any sense
             sql += " LIMIT " + opts.limit;
         }
 
-        return map(klass.query(sql), function(i,row) { return new klass(row); });
+        opts.order  = opts.order || klass.order;
+        if(opts.order) {
+            sql += " ORDER BY " + DB.quote_column(opts.order);
+        }
+
+        return klass.query(sql);
     };
 
     klass.first = function(filter, opts) {
@@ -237,7 +340,7 @@ DB.model = function(db, table_name) {
     klass.get = function(pks) {
         fst = klass.first(pks);
         if(!fst)
-            throw new Error("User does not exist!");
+            throw new Error(klass.table_name + " does not exist!");
         return fst;
     };
 
@@ -253,7 +356,6 @@ DB.model = function(db, table_name) {
         var rows = klass.query(sql);
         return rows[0]['count'];
     };
-
 
     return klass;
 };

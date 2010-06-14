@@ -57,7 +57,7 @@ Object.prototype.toString = function(open_brace, close_brace) {
     str=open_brace || "{";
     for(var i in this) {
         a=this[i];
-        if(typeof(a)!="function" && a) {
+        if(a && typeof(a)!="function") {
             str+= i + ": ";
             if(typeof(a)=="string" || a instanceof String) {
                 str+="'" + a + "'";
@@ -77,6 +77,10 @@ function update_attributes(dest, src) {
         dest[i] = src[i];
     }
 };
+
+function format_price(p) {
+    return p.toFixed(2) + " лв.";
+}
 
 String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);

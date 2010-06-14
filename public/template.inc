@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="bg" lang="bg">
     <head>
         <title> Продажба на билети за спортни събития :: <%= blocks.title||"Начална страница" %> </title>
@@ -14,7 +14,7 @@
     </head>
 
     <body>
-        <h1>Онлайн спортни билети</h1>
+        <h1><a href="/default.asp">Онлайн спортни билети</a></h1>
         <!-- begin content -->
             <%= flash %>
             <div id="logged">

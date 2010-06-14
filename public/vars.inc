@@ -1,5 +1,4 @@
 <!-- #include FILE="flash.inc" -->
-<!-- #include FILE="models.inc" -->
 <!-- #include FILE="html.inc" -->
 <%
     /* Various variable initializations */

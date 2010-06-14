@@ -1,22 +1,24 @@
-<!-- #include FILE="db.inc" -->
 <!-- #include FILE="settings.inc" -->
 <!-- #include FILE="md5.inc" -->
 <%
-  db             = new DB.Connection("PostgreSQL35W",
+
+  var db             = new DB.Connection("PostgreSQL35W",
                                    "SET search_path TO tickets;");
-  Cart           = db.model("Cart");
-  CartItem       = db.model("CartItem");
-  Order          = db.model("Order");
-  Courier        = db.model("Courier");
-  User           = db.model("User");
-  Administrator  = db.model("Administrator");
-  Sport          = db.model("Sport");
-  Event          = db.model("Event");
-  Client         = db.model("Client");
-  TicketCategory = db.model("TicketCategory");
-  Place          = db.model("Place");
-  Address        = db.model("Address");
-  OrderItem      = db.model("OrderItem");
+  db.connect();
+  var Cart           = db.model("Cart");
+  var CartItem       = db.model("CartItem");
+  var Order          = db.model("Order");
+  var Courier        = db.model("Courier");
+  var User           = db.model("User");
+  var Administrator  = db.model("Administrator");
+  var Sport          = db.model("Sport");
+  var Event          = db.model("Event");
+  var Client         = db.model("Client");
+  var TicketCategory = db.model("TicketCategory", {order: 'price'});
+  var Place          = db.model("Place");
+  var Address        = db.model("Address");
+  var OrderItem      = db.model("OrderItem");
+
 
 
   /* Returns a hashed password.

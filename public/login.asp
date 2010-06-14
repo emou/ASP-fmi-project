@@ -1,6 +1,11 @@
 <!-- #include FILE="init.inc" -->
 <!-- #include FILE="form.inc" -->
 <%
+    if(current_user) {
+        Session("flash") = "Вие вече сте влезли";
+        Response.redirect("default.asp");
+    }
+
     var form;
     if(method=="POST") {
         form = new LoginForm({}, Request);

@@ -1,12 +1,22 @@
 <!-- #include FILE="init.inc" -->
 <%
-    var e = Event.get({id: Request.QueryString("id")});
-    blocks['title'] = e.Sport_name + " | " + e.name;
+    var ev = Event.get({id: Request.QueryString("id")});
+    var place = ev.associated("Place");
+    var tickets = ev.associated_set("TicketCategory");
+    var sport = ev.associated("Sport");
 
-    content = new Tag('h2', {}, e.name);
-    content += new Tag('h3', {}, e.Sport_name);
-    content += new Tag('small', {}, new Date(e.start));
-    content += new Tag('div', {'class': 'place'}, e.Place_name)
+    blocks['title'] = ev.Sport_name + " | " + ev.name;
+
+    content = new Tag('h2', {}, ev.name);
+    content += new Tag('h3', {}, sport.html_link());
+    content += new Tag('small', {}, new Date(ev.start));
+    content += new Tag('div', {'class': 'place'}, place.html_link());
+
+    var prices_list =  new Tag('ul', {'class': 'prices'});
+    for(var i in tickets) {
+        prices_list.append( new Tag('li', {}, tickets[i].name + " " + format_price(tickets[i].price)) );
+    }
+    content += new Tag('h3', {}, "Цени на билетите") + prices_list;
 
     blocks['content'] = content;
 %>
