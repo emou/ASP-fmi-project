@@ -1,4 +1,4 @@
-<%@ CODEPAGE=65001 %>
+<%@ CODEPAGE="65001" LCID="1026" %>
 <!-- #include FILE="db.inc" -->
 <!-- #include FILE="models.inc" -->
 <!-- #include FILE="vars.inc" -->

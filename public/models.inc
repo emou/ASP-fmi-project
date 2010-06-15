@@ -12,13 +12,12 @@
   var User           = db.model("User");
   var Administrator  = db.model("Administrator");
   var Sport          = db.model("Sport");
-  var Event          = db.model("Event");
+  var Event          = db.model("Event", {order_by: 'start', order: 'ASC'});
   var Client         = db.model("Client");
-  var TicketCategory = db.model("TicketCategory", {order: 'price'});
+  var TicketCategory = db.model("TicketCategory", {order_by: 'price'});
   var Place          = db.model("Place");
   var Address        = db.model("Address");
   var OrderItem      = db.model("OrderItem");
-
 
 
   /* Returns a hashed password.
@@ -53,14 +52,18 @@
       return this.first_name + ' ' + this.family_name;
   };
 
-  Event.prototype.toString = function() {
-      return this.name;
-  }
-
   User.current = function() {
       if(Session("email")) {
           return User.get({email: Session("email")});
       }
+  };
+
+  Event.prototype.toString = function() {
+      return this.name;
+  };
+
+  Place.prototype.toString = function() {
+      return place.name;
   };
 
 %>

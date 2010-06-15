@@ -9,18 +9,25 @@
         <meta name="Copyright" content="Copyright (c) Emil Stanchev" />
         <meta name="keywords" content="спорт, билети, продажба" />
         <meta name="description" content="Продажба на билети за спортни прояви" />
-
         <link rel="stylesheet" href="sport.css" type="text/css" media="all" />
     </head>
 
     <body>
+        <div id="logged">
+            <%= logged %>
+        </div>
         <h1><a href="/default.asp">Онлайн спортни билети</a></h1>
+        <%= blocks['sports_menu'] %>
         <!-- begin content -->
+        <div id="path">
+            <%= blocks['path'] %>
+        </div>
+        <div id="content">
             <%= flash %>
-            <div id="logged">
-                <%= logged %>
-            </div>
             <%= blocks['content'] %>
+        </div>
         <!-- end content -->
+
+        <div id="footer">Проект по ASP програмиране. Емил Станчев, ф.н. 71100, юли 2010г.</div>
     </body>
 </html>

@@ -10,24 +10,17 @@ function FormError(msg) {
  * Inspired by Django.
  * req should be an ASP Request object
  * */
-function Form(opts, req, field_defs) {
+function Form(opts, field_defs, req) {
+
+    if(opts && !opts['action']) {
+        /* XXX A hack: opts==undefined is permitted for inheritance */
+        throw new Error("You need to provide an action for the form.");
+    }
+
+    opts = opts || {};
 
     /* Add fields and set their values if request is given */
     this.fields={};
-
-    Form.prototype.add_fields.call(this, field_defs);
-
-    if(req) {
-        for(n in this.fields) {
-            this.fields[n].set_value( new String(req.Form(n)) );
-        }
-    }
-
-    var opts = opts || {};
-
-    if(!opts['action']) {
-        throw new Error("You need to provide an action for the form.");
-    }
 
     this.name = opts['name'];
     delete opts['name'];
@@ -37,8 +30,15 @@ function Form(opts, req, field_defs) {
 
     opts['method'] = opts['method'] || 'post';
 
-
     this.attributes = opts;
+
+    Form.prototype.add_fields.call(this, field_defs);
+
+    if(req) {
+        for(n in this.fields) {
+            this.fields[n].set_value( new String(req.Form(n)) );
+        }
+    }
 
     this.errors = {};
 }
@@ -66,8 +66,8 @@ Form.prototype = {
             res = form_tag;
         }
 
-        if(this.errors.length) {
-            var err_tag=new Tag('ul', {'class': 'form_errors'});
+        if( !empty(this.errors) ) {
+            var err_tag = new Tag('ul', {'class': 'form_errors'});
             for(i in this.errors) {
                 err_tag.append(new Tag('li', {}, this.errors[i]));
             }
@@ -79,14 +79,26 @@ Form.prototype = {
                 f.mark_invalid();
             res.append(f);
         }
-        res.append(new EmptyTag('input', {name: 'submit', type: 'submit', value: this.submit}));
+        var submit_p = new Tag('p');
+        submit_p.append(new EmptyTag('input', {name: 'submit', type: 'submit', value: this.submit}));
+        res.append(submit_p);
         return form_tag.toString();
     },
 
     valid: function() {
+        if(!this.constructor.checks)
+            return true;
+
         var is_valid = true;
         for(var i in this.fields) {
             var f = this.fields[i];
+
+            if(f.get_value()=='' && f.required) {
+                this.errors[i] = "Полето " + f.get_label() + " е задължително!";
+                is_valid = false;
+                continue;
+            }
+
             var cleaner = this.constructor.checks[i];
 
             if(cleaner) {
@@ -101,7 +113,7 @@ Form.prototype = {
             }
         }
 
-        var global_cleaner = this.constructor.checks['all'];
+        var global_cleaner = this.constructor.checks && this.constructor.checks['all'];
         if(global_cleaner) {
             try {
                 global_cleaner(this.fields);
@@ -120,19 +132,34 @@ Form.prototype = {
 
 };
 
-function make_form(field_defs, opts) {
+function make_form(opts, field_defs) {
     function FormClass(local_opts, req) {
         update_attributes(opts, local_opts);
-        Form.call(this, opts, req, field_defs);
+        Form.call(this, opts, field_defs, req);
     }
-    FormClass.prototype=Form.prototype;
-    FormClass.prototype.constructor=FormClass;
+    FormClass.prototype = new Form();
+    FormClass.prototype.constructor = FormClass;
     return FormClass;
 }
 
-function make_model_form(model, opts) {
-    var field_defs = {};
-    return make_form(field_defs);
+function make_model_form(opts, model_class) {
+    var cols = model_class.columns;
+    var fks = {};
+    var fk_table = model_class.db.fk_table[model_class.table_name];
+
+    for(var i in fk_table) {
+        fks[fk_table[i].column] = fk_table[i];
+    }
+
+    debug(fks);
+
+    var field_defs = [];
+    for(var i in cols) {
+        if(fks[cols[i].name])
+            continue;
+        field_defs.push({ name: DB.verbose_name(cols[i].name), type: 'text' });
+    }
+    return make_form({action: model_class + ".asp"}, field_defs);
 }
 
 /* A class representing a field.
@@ -148,14 +175,19 @@ function Field(attrs) {
     attrs['id'] = (attrs['id']) || (attrs['name'] + '_id');
 
     var label = attrs['label'];
-    if(label) {
+
+    if(label!='') {
         delete attrs['label'];
-        this.label = label;
+        this.label = label || attrs['name']; // when label=='', use name
+        this.label = this.label.capitalize();
     }
-    else {
-        this.label = attrs['name'];
+
+    var required = attrs['required'];
+    if(required != false) {
+        required = true;
     }
-    this.label = this.label.capitalize();
+    this.required = required;
+    delete attrs['required'];
 
     this.attributes = attrs;
 
@@ -187,17 +219,21 @@ Field.prototype = {
         return this.attributes['name'];
     },
 
+    get_label: function() {
+        return this.label;
+    },
+
     mark_invalid: function() {
         this.valid = false;
     }
 };
 
 LoginForm = make_form(
-    [{type: 'text', name: 'email', label: 'e-mail адрес'},
-     {type: 'password', name: 'password', label: 'Парола'}
-    ],
+    {action: 'login.asp', submit: 'Вход', name: 'Вход', id: 'login_form'},
 
-    {action: 'login.asp', submit: 'Вход', name: 'Вход', id: 'login_form'}
+    [{type: 'text', name: 'email', label: 'e-mail адрес'},
+     {type: 'password', name: 'password', label: 'парола'}
+    ]
 );
 
 LoginForm.checks = {
@@ -217,5 +253,27 @@ LoginForm.checks = {
 LoginForm.prototype.save = function() {
     return User.authenticate(this.fields['email'].get_value(), this.fields['password'].get_value());
 };
+
+
+RegisterForm = make_form(
+    {action: 'register.asp', submit: 'Регистрация', name: 'Регистрация', id: 'register_form'},
+    [{type: 'text', name: 'email', label: 'e-mail адрес'},
+     {type: 'password', name: 'password', label: 'парола'}
+    ]
+);
+
+RegisterForm.checks = {
+    all: function(fields) {
+        if ( User.exists({email: fields['email'].get_value()}) ) {
+                throw new FormError("Този Email адрес вече е зает!");
+        }
+    },
+
+    password: function(pass) {
+        if(pass.length<5) throw new FormError("Тази парола е твърде къса, моля въведете поне 5 символа.");
+    }
+};
+
+ClientForm = make_model_form({}, Client);
 
 %>

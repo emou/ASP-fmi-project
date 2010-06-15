@@ -81,7 +81,14 @@ var DB = {
 };
 
 DB.Column = function(options) {
-    this.name = options['column_name'];
+    this.props = options;
+    this.name = options['COLUMN_NAME'];
+};
+
+DB.verbose_name = function(n) {
+    var res = n.split('_');
+    res[0] = res[0].capitalize();
+    return res.join(' ');
 };
 
 DB.Connection = function(dsn, exec_on_connect) {
@@ -160,7 +167,8 @@ DB.model = function(db, table_name, opts) {
 
     opts = opts || {};
 
-    klass.order = opts['order'];
+    klass.order_by = opts.order_by;
+    klass.order = opts.order;
 
     klass.db         = db;
     klass.table_name = table_name;
@@ -231,7 +239,7 @@ DB.model = function(db, table_name, opts) {
             var filter=this.pk_attributes();
 
             /* Check if there are rows with those primary-key values */
-            return klass.count(filter)>0;
+            return klass.exists(filter);
         },
 
         /* Returns the associated records in a many-to-one relationship for the many side.
@@ -279,11 +287,14 @@ DB.model = function(db, table_name, opts) {
                 }
             }
 
-            //throw new Error("No foreign key found from table " + klass.table_name + " to table " + table_name + "!");
+            throw new Error("No foreign key found from table " + table_name + " to table " + klass.table_name + "!");
         },
 
-        /* For debugging */
         toString: function() {
+            return this.name;
+        },
+
+        debug: function() {
             var str = Object.prototype.toString.call(this, '(', ')');
             return klass.table_name + str;
         },
@@ -293,7 +304,7 @@ DB.model = function(db, table_name, opts) {
             var pk_attrs = this.pk_attributes();
 
             for(var k in pk_attrs) {
-                params.push( k + '=' + pk_attrs[k] );
+                params.push(k + '=' + encodeURIComponent(pk_attrs[k]) );
             }
 
             return new Tag('a', {href: klass.table_name + '.asp?' + params.join('&')}, content || this.name || this);
@@ -312,10 +323,28 @@ DB.model = function(db, table_name, opts) {
 
     klass.all = function(filter, opts) {
         opts = opts || {};
-        var sql = 'select * from ' + DB.quote_table(klass.table_name) + ' ';
+
+        var what = opts.fetch_only || '*';
+        if(what.join) {
+            what = what.join(',');
+        }
+
+        var sql = 'select ' + what + ' from ' + DB.quote_table(klass.table_name) + ' ';
 
         if (filter) {
             sql += DB.where_clause(filter, opts);
+        }
+
+        if(opts.group_by) {
+            sql+= " GROUP BY " + DB.quote_column(opts.group_by);
+        }
+
+        opts.order_by  = opts.order_by || klass.order_by;
+        opts.order  = opts.order || klass.order;
+        if(opts.order_by) {
+            sql += " ORDER BY " + DB.quote_column(opts.order_by);
+            if(opts.order)
+                sql += opts.order;
         }
 
         if (opts.limit) {
@@ -323,12 +352,12 @@ DB.model = function(db, table_name, opts) {
             sql += " LIMIT " + opts.limit;
         }
 
-        opts.order  = opts.order || klass.order;
-        if(opts.order) {
-            sql += " ORDER BY " + DB.quote_column(opts.order);
+        try {
+            return klass.query(sql);
         }
-
-        return klass.query(sql);
+        catch(e) {
+            throw new Error(sql);
+        }
     };
 
     klass.first = function(filter, opts) {
@@ -355,6 +384,10 @@ DB.model = function(db, table_name, opts) {
         sql += DB.where_clause(filter, opts);
         var rows = klass.query(sql);
         return rows[0]['count'];
+    };
+
+    klass.exists = function(filter) {
+        return klass.count(filter)>0;
     };
 
     return klass;
