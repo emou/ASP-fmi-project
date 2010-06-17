@@ -106,6 +106,10 @@ String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);
 };
 
+String.prototype.strip = function() {
+    return this.replace(/^\W+/,'').replace(/\W+$/,'');
+};
+
 
 function group_objects(objs, field_name) {
     if(objs[0][field_name] == null)

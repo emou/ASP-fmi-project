@@ -19,7 +19,6 @@ function Form(opts, field_defs, req) {
 
     opts = opts || {};
 
-    /* Add fields and set their values if request is given */
     this.fields={};
 
     this.name = opts['name'];
@@ -32,13 +31,16 @@ function Form(opts, field_defs, req) {
 
     this.attributes = opts;
 
-    Form.prototype.add_fields.call(this, field_defs);
 
+    /* Set values from req.Form */
     if(req) {
-        for(n in this.fields) {
-            this.fields[n].set_value( new String(req.Form(n)) );
+        for(var i in field_defs) {
+            //XXX: String? What about numbers and dates...
+            field_defs[i].value = new String( req.Form(field_defs[i].name) ).toString();
         }
     }
+
+    Form.prototype.add_fields.call(this, field_defs);
 
     this.errors = {};
 }
@@ -104,7 +106,9 @@ Form.prototype = {
             if(cleaner) {
                 try {
                     var cleaned_value = cleaner(f.get_value());
-                    f.set_value(cleaned_value);
+                    if(cleaned_value) {
+                        f.set_value(cleaned_value);
+                    }
                 }
                 catch(e) {
                     is_valid = false;
@@ -142,25 +146,23 @@ function make_form(opts, field_defs) {
     return FormClass;
 }
 
-function make_model_form(opts, model_class) {
-    var cols = model_class.columns;
-    var fks = {};
-    var fk_table = model_class.db.fk_table[model_class.table_name];
-
-    for(var i in fk_table) {
-        fks[fk_table[i].column] = fk_table[i];
-    }
-
-    debug(fks);
-
-    var field_defs = [];
-    for(var i in cols) {
-        if(fks[cols[i].name])
-            continue;
-        field_defs.push({ name: DB.verbose_name(cols[i].name), type: 'text' });
-    }
-    return make_form({action: model_class + ".asp"}, field_defs);
-}
+//function make_model_form(opts, model_class) {
+//    var cols = model_class.columns;
+//    var fks = {};
+//    var fk_table = model_class.db.fk_table[model_class.table_name];
+//
+//    for(var i in fk_table) {
+//        fks[fk_table[i].column] = fk_table[i];
+//    }
+//
+//    var field_defs = [];
+//    for(var i in cols) {
+//        if(fks[cols[i].name])
+//            continue;
+//        field_defs.push({ name: DB.verbose_name(cols[i].name), type: 'text' });
+//    }
+//    return make_form({action: model_class + ".asp"}, field_defs);
+//}
 
 /* A class representing a field.
  * Again, inspired by Django.
@@ -189,7 +191,19 @@ function Field(attrs) {
     this.required = required;
     delete attrs['required'];
 
+
+    this.value = attrs['value'];
     this.attributes = attrs;
+
+    if(attrs['type'] == 'textarea') {
+        this.tag = new Tag('textarea', this.attributes, this.attributes['value']);
+        delete this.attributes['type'];
+        delete this.attributes['value'];
+    }
+    else {
+        this.tag = new EmptyTag('input', this.attributes);
+    }
+
 
 };
 
@@ -199,7 +213,7 @@ Field.prototype = {
         var p=new Tag('p', p_attrs);
         label = new Tag('label', {'for': this.attributes['id']}, this.label);
         p.append(label);
-        p.append(new EmptyTag('input', this.attributes));
+        p.append(this.tag);
         return p.toString();
     },
 
@@ -208,7 +222,7 @@ Field.prototype = {
     },
 
     get_value: function() {
-        return this.attributes['value'];
+        return this.value;
     },
 
     set_name: function(name) {
@@ -258,22 +272,54 @@ LoginForm.prototype.save = function() {
 RegisterForm = make_form(
     {action: 'register.asp', submit: 'Регистрация', name: 'Регистрация', id: 'register_form'},
     [{type: 'text', name: 'email', label: 'e-mail адрес'},
-     {type: 'password', name: 'password', label: 'парола'}
+     {type: 'password', name: 'password', label: 'парола'},
+     {type: 'password', name: 'password_confirmation', label: 'потвърдете паролата'},
+     {type: 'text', name: 'first_name', label: 'собствено име'},
+     {type: 'text', name: 'last_name', label: 'фамилно име'},
+     {type: 'text', name: 'phone_number', label: 'телефонен номер'},
+     {type: 'text', name: 'city', label: 'град'},
+     {type: 'textarea', name: 'details', label: 'адрес'}
     ]
 );
 
 RegisterForm.checks = {
-    all: function(fields) {
-        if ( User.exists({email: fields['email'].get_value()}) ) {
+    email: function(e) {
+        if ( User.exists({email: e}) )
                 throw new FormError("Този Email адрес вече е зает!");
-        }
+        return e;
     },
 
     password: function(pass) {
-        if(pass.length<5) throw new FormError("Тази парола е твърде къса, моля въведете поне 5 символа.");
+        if(pass.length<5)
+            throw new FormError("Тази парола е твърде къса, моля въведете поне 5 символа.");
+        return pass;
+    },
+
+    all: function(fields) {
+        if ( fields.password_confirmation.get_value() != fields.password.get_value() ) {
+            fields.password_confirmation.mark_invalid();
+            throw new FormError("Паролата и потвърждението не съвпадат.");
+        }
     }
 };
 
-ClientForm = make_model_form({}, Client);
+RegisterForm.prototype.save = function() {
+    var f = {};
+
+    for(var k in this.fields) {
+        f[k] = this.fields[k].get_value();
+    }
+
+    var u = new User(f);
+    u.is_admin = false;
+    u.set_password(f.password);
+    u.save();
+
+    var a = new Address(f);
+    a.save();
+
+    var c = new Client({User_email: u.email, phone_number: f.phone_number, Address_id: a.id});
+    c.save();
+};
 
 %>

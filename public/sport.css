@@ -6,7 +6,7 @@ body {
     margin-right: auto;
 }
 
-form input {
+form input, form textarea {
     display: block;
 }
 
@@ -113,7 +113,7 @@ form {
     background-color: #FF6666;
 }
 
-.invalid_field input {
+.invalid_field input, .invalid_field textarea {
     border: 1px solid #FF6666;
 }
 

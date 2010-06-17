@@ -306,7 +306,7 @@ INSERT INTO "Address" ("id", "city", "details") VALUES (16, 'Пловдив', '�
 INSERT INTO "Address" ("id", "city", "details") VALUES (17, 'Варна', 'ул. Княз Борис I №115');
 INSERT INTO "Address" ("id", "city", "details") VALUES (18, 'Велико Търново', 'бул. "Стадион Ивайло"');
 INSERT INTO "Address" ("id", "city", "details") VALUES (19, 'Варна', 'ул. Никола Вaпцаров 9');
-
+ALTER SEQUENCE "Address_id_seq" RESTART WITH 20;
 
 -- -----------------------------------------------------
 -- Data for table "Client"
@@ -389,8 +389,8 @@ INSERT INTO "Event" ("id", "Place_name", "Sport_name", "start", "duration", "nam
 INSERT INTO "Event" ("id", "Place_name", "Sport_name", "start", "duration", "name") VALUES (23, 'Дворец на културата и спорта', 'Волейбол', '2010-06-13', NULL, 'България - Италия');
 INSERT INTO "Event" ("id", "Place_name", "Sport_name", "start", "duration", "name") VALUES (24, 'Дворец на културата и спорта', 'Бадминтон', '2010-06-12', NULL, 'Квалификации за европейско първенство - жени');
 INSERT INTO "Event" ("id", "Place_name", "Sport_name", "start", "duration", "name") VALUES (25, 'Дворец на културата и спорта', 'Бадминтон', '2010-06-13', NULL, 'Квалификации за европейско първенство - мъже');
-
-
+ALTER SEQUENCE "Event_id_seq" RESTART WITH 26;
+ 
 -- -----------------------------------------------------
 -- Data for table "TicketCategory"
 -- -----------------------------------------------------

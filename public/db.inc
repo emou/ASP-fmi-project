@@ -35,11 +35,14 @@ var DB = {
 
       for(var k in values) {
         var val=values[k];
-        if(k==null || val==null) {
+        if(k && val) {
+            params.push(DB.quote_column(k) + '=' + DB.quote_value(val));
+        }
+        else {
             throw new Error("Empty parameters while building conditions for query!");
         }
-        params.push(DB.quote_column(k) + '=' + DB.quote_value(val));
       }
+
 
       return params;
   },
@@ -93,7 +96,7 @@ DB.verbose_name = function(n) {
 
 DB.Connection = function(dsn, exec_on_connect) {
 
-    this.dsn = dsn;
+    this.dsn= dsn;
     this.exec_on_connect = exec_on_connect;
 
     /* Caching */
@@ -133,7 +136,7 @@ DB.Connection.prototype = {
             this._conn = Server.createObject("ADODB.Connection");
             this._conn.open("DSN=" + this.dsn);
         }
-        catch(excection) {
+        catch(e) {
             // Hide sensitive info
             throw new Error("Could not connect to the DB");
         }
@@ -159,10 +162,16 @@ DB.Connection.prototype = {
  
 };
 
-//Returns a new meta class, representing a database table
+//A meta class, representing a database table
 DB.model = function(db, table_name, opts) {
+
+    klass.columns    = db.columns(table_name);
+
     function klass(attributes) {
-      this.update_attributes(attributes);
+        for(var i in klass.columns) {
+            var c   = klass.columns[i].name;
+            this[c] = attributes[c] || null; // not undefined
+        }
     };
 
     opts = opts || {};
@@ -172,7 +181,6 @@ DB.model = function(db, table_name, opts) {
 
     klass.db         = db;
     klass.table_name = table_name;
-    klass.columns    = db.columns(table_name);
     rs               = klass.db._conn.OpenSchema(28, [null, null, klass.table_name]); // 28 means: return primary keys
     klass.primary_keys = [];
     while (rs.EOF != true) {
@@ -198,6 +206,7 @@ DB.model = function(db, table_name, opts) {
                 if (this[attr])
                     attrs[attr] = this[attr];
             }
+
             return attrs;
         },
 
@@ -206,32 +215,86 @@ DB.model = function(db, table_name, opts) {
         },
 
         save: function(update) {
+
             var quoted_table_name = DB.quote_table(klass.table_name);
 
-            var db_attrs = this.db_attributes();
-            if(db_attrs == {})
-                return null;
 
-            var cols = [];
-            var vals = [];
+            var cols = new Array();
+            var vals = new Array();
+
+            var db_attrs = this.db_attributes();
 
             for(var k in db_attrs) {
                 cols.push(k);
-                vals.push(DB.quote_value(db_attrs[k]));
+                vals.push(db_attrs[k]); //DB.quote_value(db_attrs[k]));
             }
 
-            var sql = '';
+            var sql;
             if(update || this.exists()) {
-                sql = 'update ' + quoted_table_name;
-                sql+= DB.set_clause(db_attrs);
-                sql+= DB.where_clause(this.pk_attributes());
+                var rs = Server.CreateObject("ADODB.Recordset");
+
+                rs.Open(quoted_table_name, db._con, 2, 2, 512);
+
+                for(var i in cols) {
+                    rs(cols[i]) = vals[i];
+                }
+                rs.Update();
+
+                rs.Close();
+
+                /* Use a recordset? And refresh object? */
+                //sql = 'update ' + quoted_table_name;
+                //sql+= DB.set_clause(db_attrs);
+                //sql+= DB.where_clause(this.pk_attributes());
+                //db.execute(sql);
             }
             else {
-                sql = 'insert into ' + quoted_table_name;
-                sql+= DB.tuple(cols) + ' values ' + DB.tuple(vals);
+                var rs = Server.CreateObject("ADODB.Recordset");
+                rs.CursorLocation = 3; // adUseClient. Without this, resync() does not work!
+                rs.Open(quoted_table_name, db._conn, 3, 3, 512);
+
+                rs.AddNew(cols, vals);
+                rs.Update();
+                this._refresh(rs);
+
+                rs.Close();
             }
 
-            db.execute(sql);
+
+        },
+
+        /* Refresh values in the object from a recordset
+         * Changes argument rs
+         * For internal use only
+         *
+         * - If the model has a serial (autoincrement, AI) field,
+         *   that was specified in the creation of the model,
+         *   to refresh the row, we use absolutePosition and Requery().
+         *   - If there is column named 'id', we assume it to be AI
+         *     and to the same as above.
+         *
+         * - If klass.serial is null, we do not make the assumption about
+         *   the 'ID' column
+         * 
+         */
+        _refresh: function(rs) { 
+
+            if(klass.serial || (this.id === null && klass.serial === undefined)) {
+                var pos = rs.absolutePosition;
+                rs.Requery();
+                rs.absolutePosition = pos;
+            }
+            else {
+                rs.Resync();
+            }
+
+            var cols = klass.columns;
+            for(var i in cols) {
+                 //debug("Refreshing " + klass.table_name + "(" + cols[i].name + ") to ");
+                 this[cols[i].name] = rs.Fields(cols[i].name).value;
+                 //debug(this[cols[i].name]);
+            }
+
         },
 
         exists: function() {
@@ -247,6 +310,7 @@ DB.model = function(db, table_name, opts) {
          *      book.associated('Author');
          * Does *not* support different roles (or multiple foreign keys for a single role) at the moment,
          * but it would be easy to add this just by returning a 2D array of rows: one array per role.
+         * WARNING: This function is potentionally danger, as it uses eval.
          * */
         associated: function(table_name) {
 
@@ -312,8 +376,12 @@ DB.model = function(db, table_name, opts) {
 
     };
 
-    // class methods
     klass.query = function(sql) {
+        return DB.getRows(klass.db.execute(sql));
+    };
+
+    // class methods
+    klass.model_query = function(sql) {
         return DB.getRows(klass.db.execute(sql), klass);
     };
 
@@ -353,7 +421,7 @@ DB.model = function(db, table_name, opts) {
         }
 
         try {
-            return klass.query(sql);
+            return klass.model_query(sql);
         }
         catch(e) {
             throw new Error(sql);
@@ -361,6 +429,9 @@ DB.model = function(db, table_name, opts) {
     };
 
     klass.first = function(filter, opts) {
+        if(empty(filter)) {
+            throw new Error(klass.table_name + ": empty filter!");
+        }
         opts = opts || {};
         opts.limit = 1;
         return klass.all(filter, opts)[0];
@@ -380,9 +451,13 @@ DB.model = function(db, table_name, opts) {
 
     klass.count = function(filter, opts) {
         opts = opts || {};
+        if(empty(filter))
+            return 0;
         var sql = 'select count(*) from ' + DB.quote_table(klass.table_name);
         sql += DB.where_clause(filter, opts);
+
         var rows = klass.query(sql);
+
         return rows[0]['count'];
     };
 

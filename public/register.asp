@@ -8,15 +8,16 @@
 
     var form;
     if(method=="POST") {
+
         form = new RegisterForm({}, Request);
         if(form.valid()) {
             form.save();
             Session("flash") = "Вие се регистрирахте успешно с " + form.fields.email.get_value() + "!";
-            Response.Redirect("default.asp");      
+            //Response.Redirect("default.asp");
         }
     }
     else {
-        form = new ClientForm();
+        form = new RegisterForm();
     }
 
     blocks['content'] = form;

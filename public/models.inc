@@ -2,8 +2,7 @@
 <!-- #include FILE="md5.inc" -->
 <%
 
-  var db             = new DB.Connection("PostgreSQL35W",
-                                   "SET search_path TO tickets;");
+  var db             = new DB.Connection("PostgreSQL35W", "SET search_path TO tickets;");
   db.connect();
   var Cart           = db.model("Cart");
   var CartItem       = db.model("CartItem");
@@ -46,6 +45,12 @@
   /* Sets the user's password. Does not save the user! */
   User.prototype.set_password = function(pass) {
     this.password = User._hash_pass(pass);
+  };
+
+  User.create = function(email, pass) {
+      this.set_password(pass);
+      this.email=email; 
+      this.save();
   };
 
   User.prototype.toString = function() {
