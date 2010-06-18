@@ -1,5 +1,5 @@
-<!-- #include FILE="init.inc" -->
-<!-- #include FILE="form.inc" -->
+<!-- #include FILE="includes/init.inc" -->
+<!-- #include FILE="includes/form.inc" -->
 <%
     if(current_user) {
         Session("flash") = "Вие вече сте влезли";
@@ -8,7 +8,7 @@
 
     var form;
     if(method=="POST") {
-        form = new LoginForm({}, Request);
+        form = new LoginForm({}, collToArray(Request.Form));
         if(form.valid()) {
             Session("email") = form.save().email;
             Session("flash") = "Вие се вписахте успешно с " + Session("email") + "!";
@@ -23,4 +23,4 @@
     blocks['title'] = "Вписване";
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->

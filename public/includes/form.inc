@@ -10,7 +10,7 @@ function FormError(msg) {
  * Inspired by Django.
  * req should be an ASP Request object
  * */
-function Form(opts, field_defs, req) {
+function Form(opts, field_defs, initial_data) {
 
     if(opts && !opts['action']) {
         /* XXX A hack: opts==undefined is permitted for inheritance */
@@ -31,12 +31,10 @@ function Form(opts, field_defs, req) {
 
     this.attributes = opts;
 
-
-    /* Set values from req.Form */
-    if(req) {
-        for(var i in field_defs) {
+    if(initial_data) {
+        for(var k in field_defs) {
             //XXX: String? What about numbers and dates...
-            field_defs[i].value = new String( req.Form(field_defs[i].name) ).toString();
+            field_defs[k]['value'] = new String( initial_data[k] || "" ).toString();
         }
     }
 
@@ -48,8 +46,9 @@ function Form(opts, field_defs, req) {
 Form.prototype = {
 
     add_fields: function(field_defs) {
-        for(i in field_defs) {
-            var f = new Field(field_defs[i]);
+        for(var n in field_defs) {
+            field_defs[n]['name'] = n;
+            var f = new Field(field_defs[n]);
             this.fields[ f.get_name() ] = f;
         }
     },
@@ -137,32 +136,39 @@ Form.prototype = {
 };
 
 function make_form(opts, field_defs) {
-    function FormClass(local_opts, req) {
+    function FormClass(local_opts, initial_data) {
         update_attributes(opts, local_opts);
-        Form.call(this, opts, field_defs, req);
+        Form.call(this, opts, field_defs, initial_data);
     }
     FormClass.prototype = new Form();
     FormClass.prototype.constructor = FormClass;
     return FormClass;
 }
 
-//function make_model_form(opts, model_class) {
-//    var cols = model_class.columns;
-//    var fks = {};
-//    var fk_table = model_class.db.fk_table[model_class.table_name];
-//
-//    for(var i in fk_table) {
-//        fks[fk_table[i].column] = fk_table[i];
-//    }
-//
-//    var field_defs = [];
-//    for(var i in cols) {
-//        if(fks[cols[i].name])
-//            continue;
-//        field_defs.push({ name: DB.verbose_name(cols[i].name), type: 'text' });
-//    }
-//    return make_form({action: model_class + ".asp"}, field_defs);
-//}
+function make_model_form(Model, opts, initial_data) {
+    var cols = Model.columns;
+    var field_defs = {};
+    
+    for(var i in cols) {
+        field_defs[cols[i].name] = ( cols[i].field_def() );
+        field_defs[cols[i].name]['label'] = Settings.field_names[ cols[i].name ];
+    }
+
+    var ModelForm = make_form(opts, field_defs);
+    ModelForm.prototype.save = function() {
+        var f = {};
+
+        for(var k in this.fields) {
+            f[k] = this.fields[k].get_value();
+        }
+
+        var model = new Model(f); 
+
+        model.save();
+    };
+
+    return new ModelForm(undefined, initial_data);
+}
 
 /* A class representing a field.
  * Again, inspired by Django.
@@ -178,11 +184,21 @@ function Field(attrs) {
 
     var label = attrs['label'];
 
-    if(label!='') {
-        delete attrs['label'];
-        this.label = label || attrs['name']; // when label=='', use name
-        this.label = this.label.capitalize();
+    /*
+     * if label is undefined -> name
+     * if label is null -> null
+     * if label is '' -> ''
+     */
+    if(label === undefined) {
+        this.label = attrs['name'];
     }
+    else if(label) {
+        delete attrs['label'];
+        this.label = label;
+    }
+
+    if(this.label)
+        this.label = this.label.capitalize();
 
     var required = attrs['required'];
     if(required != false) {
@@ -204,15 +220,16 @@ function Field(attrs) {
         this.tag = new EmptyTag('input', this.attributes);
     }
 
-
 };
 
 Field.prototype = {
     toString: function(error) {
         var p_attrs = this.valid ? {} : {'class': 'invalid_field'};
         var p=new Tag('p', p_attrs);
-        label = new Tag('label', {'for': this.attributes['id']}, this.label);
-        p.append(label);
+        if(this.label) {
+            label = new Tag('label', {'for': this.attributes['id']}, this.label);
+            p.append(label);
+        }
         p.append(this.tag);
         return p.toString();
     },
@@ -245,9 +262,10 @@ Field.prototype = {
 LoginForm = make_form(
     {action: 'login.asp', submit: 'Вход', name: 'Вход', id: 'login_form'},
 
-    [{type: 'text', name: 'email', label: 'e-mail адрес'},
-     {type: 'password', name: 'password', label: 'парола'}
-    ]
+    {
+     email: {type: 'text', label: 'e-mail адрес'},
+     password: {type: 'password', label: 'парола'}
+    }
 );
 
 LoginForm.checks = {
@@ -271,15 +289,16 @@ LoginForm.prototype.save = function() {
 
 RegisterForm = make_form(
     {action: 'register.asp', submit: 'Регистрация', name: 'Регистрация', id: 'register_form'},
-    [{type: 'text', name: 'email', label: 'e-mail адрес'},
-     {type: 'password', name: 'password', label: 'парола'},
-     {type: 'password', name: 'password_confirmation', label: 'потвърдете паролата'},
-     {type: 'text', name: 'first_name', label: 'собствено име'},
-     {type: 'text', name: 'last_name', label: 'фамилно име'},
-     {type: 'text', name: 'phone_number', label: 'телефонен номер'},
-     {type: 'text', name: 'city', label: 'град'},
-     {type: 'textarea', name: 'details', label: 'адрес'}
-    ]
+    {
+     email: {type: 'text', label: 'e-mail адрес'},
+     password: {type: 'password', label: 'парола'},
+     password_confirmation: {type: 'password', label: 'потвърдете паролата'},
+     first_name: {type: 'text', label: 'собствено име'},
+     last_name: {type: 'text', label: 'фамилно име'},
+     phone_number: {type: 'text', label: 'телефонен номер'},
+     city: {type: 'text', label: 'град'},
+     details: {type: 'textarea', label: 'адрес'}
+    }
 );
 
 RegisterForm.checks = {

@@ -1,4 +1,4 @@
-<!-- #include FILE="init.inc" -->
+<!-- #include FILE="includes/init.inc" -->
 <%
     var city = decodeURIComponent(Request.QueryString("city"));
     blocks['title'] = city;
@@ -8,4 +8,4 @@
     blocks['content'] = "";
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->

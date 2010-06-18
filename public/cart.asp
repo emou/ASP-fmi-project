@@ -1,4 +1,4 @@
-<!-- #include FILE="init.inc" -->
+<!-- #include FILE="includes/init.inc" -->
 <%
     var content = "";
     var ticket = TicketCategory.get({id: Request.QueryString("id")});
@@ -16,4 +16,4 @@
     blocks['content'] = content;
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->

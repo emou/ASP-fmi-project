@@ -1,5 +1,5 @@
-<!-- #include FILE="init.inc" -->
-<!-- #include FILE="form.inc" -->
+<!-- #include FILE="includes/init.inc" -->
+<!-- #include FILE="includes/form.inc" -->
 <%
     var ev = Event.get({id: Request.QueryString("id")});
     var place = ev.associated("Place");
@@ -40,4 +40,4 @@
     blocks['content'] = content;
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->

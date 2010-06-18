@@ -84,23 +84,97 @@ var DB = {
 };
 
 DB.Column = function(options) {
-    this.props = options;
     this.name = options['COLUMN_NAME'];
+    delete options['COLUMN_NAME'];
+
+    for(var k in options)
+        this[k] = options[k];
+    //debug(this.name + ": " + options['DATA_TYPE']);
+
 };
 
-DB.verbose_name = function(n) {
-    var res = n.split('_');
-    res[0] = res[0].capitalize();
-    return res.join(' ');
+DB.Column.prototype.field_def = function() {
+    var db_type = this.DATA_TYPE;
+
+    var field_def = {};
+
+    switch( db_type ) {
+        case adBoolean:
+            field_def.type = "checkbox";
+            break;
+        default:
+            field_def.type = "text";
+
+        break;
+    }
+
+    return field_def;
 };
 
-DB.Connection = function(dsn, exec_on_connect) {
+/* A factory for connections */
+DB.make_connection = function(dsn, exec_on_connect) {
+    function klass() {}
 
-    this.dsn= dsn;
-    this.exec_on_connect = exec_on_connect;
+    /* A table for quick access to the models.
+     * Every created model should be added to the index
+     * by the model factory function DB.model
+     * using the register_model method.
+     * */
+    klass.model_index = {};
 
-    /* Caching */
-    this.fk_table = {};
+    /* A table for quick access to the primary keys */
+    klass.fk_table = {};
+
+    /* The name of the ODBC source */
+    klass.dsn = dsn;
+
+    /* A command that is executed on every connect.
+     * Usualy setting the schema */
+    klass.exec_on_connect = exec_on_connect;
+
+    klass.prototype = {
+        connect: function() {
+            try {
+                this._conn = Server.createObject("ADODB.Connection");
+                this._conn.open("DSN=" + klass.dsn);
+            }
+            catch(e) {
+                // Hide sensitive info
+                throw new Error("Could not connect to the DB");
+            }
+
+            if(this.exec_on_connect) {
+                this.execute(klass.exec_on_connect);
+            }
+        },
+
+
+        model: function(table_name, opts) {
+            return DB.model(this, table_name, opts);
+        },
+     
+        columns: function(table_name) {
+            var rs      = this._conn.OpenSchema(4, [null, null, table_name]); // 4 means: return columns
+            return DB.getRows(rs, DB.Column);
+        },
+     
+        execute: function(sql) {
+            return this._conn.execute(sql);
+        },
+
+        register_model: function(model_name, model_class) {
+            klass.model_index[model_name] = model_class;
+        },
+
+        get_fk_table: function() {
+            return klass.fk_table;
+        },
+
+        get_model_class: function(name) {
+            return klass.model_index[name];
+        }
+     
+    };
 
     /* PostgreSQL specific */
     var sql =  "select tc.constraint_name, tc.table_name,\
@@ -114,70 +188,45 @@ DB.Connection = function(dsn, exec_on_connect) {
                     ON ccu.constraint_name = tc.constraint_name \
                 where constraint_type='FOREIGN KEY'";
 
-    this.connect();
+    /* Well, yeah. It IS perfectly possible! */
+    var c = new klass();
+    c.connect();
 
-    for(var rs = this.execute(sql); rs.EOF != true; rs.MoveNext()) {
+    for(var rs = c.execute(sql); rs.EOF != true; rs.MoveNext()) {
         var t = rs('table_name').value;
-        var a = this.fk_table[t] || [];
+        var a = klass.fk_table[t] || [];
         a.push({
                 column: rs('column_name').value,
                 foreign_column: rs('foreign_column_name').value,
                 foreign_table: rs('foreign_table_name').value
               });
 
-        this.fk_table[t] = a;
+        klass.fk_table[t] = a;
     }
 
-};
+    return klass;
+}
 
-DB.Connection.prototype = {
-    connect: function() {
-        try {
-            this._conn = Server.createObject("ADODB.Connection");
-            this._conn.open("DSN=" + this.dsn);
-        }
-        catch(e) {
-            // Hide sensitive info
-            throw new Error("Could not connect to the DB");
-        }
-
-        if(this.exec_on_connect) {
-            this.execute(this.exec_on_connect);
-        }
-    },
-
-
-    model: function(table_name, opts) {
-        return DB.model(this, table_name, opts);
-    },
- 
-    columns: function(table_name) {
-        var rs      = this._conn.OpenSchema(4, [null, null, table_name]); // 4 means: return columns
-        return DB.getRows(rs, DB.Column);
-    },
- 
-    execute: function(sql) {
-        return this._conn.execute(sql);
-    }
- 
-};
-
-//A meta class, representing a database table
+// A meta class, representing a database table
 DB.model = function(db, table_name, opts) {
+
+    if(!table_name) {
+        throw new Error("Cannot create model without table_name option!");
+    }
 
     klass.columns    = db.columns(table_name);
 
     function klass(attributes) {
         for(var i in klass.columns) {
             var c   = klass.columns[i].name;
-            this[c] = attributes[c] || null; // not undefined
+            this[c] = attributes[c]===undefined?null:attributes[c];
         }
     };
 
-    opts = opts || {};
-
-    klass.order_by = opts.order_by;
-    klass.order = opts.order;
+    /* Very permissive */
+    for(var i in opts) {
+        klass[i] = opts[i];
+    }
 
     klass.db         = db;
     klass.table_name = table_name;
@@ -218,7 +267,6 @@ DB.model = function(db, table_name, opts) {
 
             var quoted_table_name = DB.quote_table(klass.table_name);
 
-
             var cols = new Array();
             var vals = new Array();
 
@@ -233,20 +281,21 @@ DB.model = function(db, table_name, opts) {
             if(update || this.exists()) {
                 var rs = Server.CreateObject("ADODB.Recordset");
 
-                rs.Open(quoted_table_name, db._con, 2, 2, 512);
+                rs.Open(quoted_table_name, db._conn, 3, 3, 512);
 
                 for(var i in cols) {
                     rs(cols[i]) = vals[i];
                 }
+
                 rs.Update();
 
                 rs.Close();
 
-                /* Use a recordset? And refresh object? */
-                //sql = 'update ' + quoted_table_name;
-                //sql+= DB.set_clause(db_attrs);
-                //sql+= DB.where_clause(this.pk_attributes());
-                //db.execute(sql);
+                // XXX: Use a recordset? And refresh object?
+                // sql = 'update ' + quoted_table_name;
+                // sql+= DB.set_clause(db_attrs);
+                // sql+= DB.where_clause(this.pk_attributes());
+                // db.execute(sql);
             }
             else {
                 var rs = Server.CreateObject("ADODB.Recordset");
@@ -310,12 +359,12 @@ DB.model = function(db, table_name, opts) {
          *      book.associated('Author');
          * Does *not* support different roles (or multiple foreign keys for a single role) at the moment,
          * but it would be easy to add this just by returning a 2D array of rows: one array per role.
-         * WARNING: This function is potentionally danger, as it uses eval.
+         * WARNING: This function is potentionally dangerous, as it uses eval.
          * */
         associated: function(table_name) {
 
             table_name = table_name.capitalize();
-            var fks = klass.db.fk_table[klass.table_name];
+            var fks = klass.db.get_fk_table()[klass.table_name];
             var model_klass = eval(table_name);
 
             /* Multiple foreign keys are possible, but *not supported* yet! */
@@ -339,7 +388,7 @@ DB.model = function(db, table_name, opts) {
         associated_set: function(table_name) {
 
             table_name = table_name.capitalize();
-            var fks = klass.db.fk_table[table_name];
+            var fks = klass.db.get_fk_table()[table_name];
             var model_klass = eval(table_name);
 
             for(var i in fks) {
@@ -364,6 +413,10 @@ DB.model = function(db, table_name, opts) {
         },
 
         html_link: function(content) {
+            return new Tag('a', {href: klass.table_name + '.asp?' + this.http_key()}, content || this.name || this);
+        },
+
+        http_key: function() {
             var params = [];
             var pk_attrs = this.pk_attributes();
 
@@ -371,7 +424,14 @@ DB.model = function(db, table_name, opts) {
                 params.push(k + '=' + encodeURIComponent(pk_attrs[k]) );
             }
 
-            return new Tag('a', {href: klass.table_name + '.asp?' + params.join('&')}, content || this.name || this);
+            return params.join('&');
+
+        },
+
+        admin_buttons: function() {
+            var buttons = new Tag('span', {'class': 'buttons'});
+            buttons.append( new Tag('a', {href: '/admin/edit.asp?object_type=' + klass.table_name + '&' + this.http_key()}, 'Edit') );
+            return buttons + this.toString();
         }
 
     };
@@ -420,12 +480,7 @@ DB.model = function(db, table_name, opts) {
             sql += " LIMIT " + opts.limit;
         }
 
-        try {
-            return klass.model_query(sql);
-        }
-        catch(e) {
-            throw new Error(sql);
-        }
+        return klass.model_query(sql);
     };
 
     klass.first = function(filter, opts) {
@@ -464,6 +519,9 @@ DB.model = function(db, table_name, opts) {
     klass.exists = function(filter) {
         return klass.count(filter)>0;
     };
+
+    /* Register the model on the index */
+    db.register_model(klass.table_name, klass);
 
     return klass;
 };

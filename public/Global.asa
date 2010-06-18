@@ -1,5 +1,5 @@
 <script language="JScript" runat="server">
-  function print(arg) {
-    Response.write(arg);
-  }
+function Application_OnStart() {
+   BUBA = "fsd"; 
+}
 </script>

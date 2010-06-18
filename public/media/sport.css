@@ -102,8 +102,8 @@ form {
 
 .small_date {
     font-size: small;
-    background-color: #FF9696;
     padding: 1px;
+    display: block;
     margin-right: 2px;
 }
 

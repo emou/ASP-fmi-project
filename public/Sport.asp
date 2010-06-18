@@ -1,4 +1,4 @@
-<!-- #include FILE="init.inc" -->
+<!-- #include FILE="includes/init.inc" -->
 <%
     var sport = Sport.get({name: decodeURIComponent( Request.QueryString("name") )});
     var events = sport.associated_set("Event");
@@ -15,4 +15,4 @@
     blocks['content'] = "<h2>" + sport.name + "</h2>" + ul;
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->

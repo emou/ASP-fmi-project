@@ -1,5 +1,5 @@
-<!-- #include FILE="init.inc" -->
-<!-- #include FILE="md5.inc" -->
+<!-- #include FILE="includes/init.inc" -->
+<!-- #include FILE="includes/md5.inc" -->
 <%
     blocks['content'] = "<h2>Предстоящи прояви</h2>";
     var events = Event.all(null, {limit: 4});
@@ -19,4 +19,4 @@
     blocks['content'] += wrapper;
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->

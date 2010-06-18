@@ -7,7 +7,7 @@ function debug(arg) {
     Response.write(arg + "<br/>");
 }
 
-function rsToArray(shit) {
+function collToArray(shit) {
     var reqEnumerator = new Enumerator(shit);
     var res={}
     while(!reqEnumerator.atEnd())
@@ -15,6 +15,7 @@ function rsToArray(shit) {
         res[reqEnumerator.item()]=shit(reqEnumerator.item());
         reqEnumerator.moveNext();
     }
+
     return res;
 }
 

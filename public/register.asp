@@ -1,5 +1,5 @@
-<!-- #include FILE="init.inc" -->
-<!-- #include FILE="form.inc" -->
+<!-- #include FILE="includes/init.inc" -->
+<!-- #include FILE="includes/form.inc" -->
 <%
     if(current_user) {
         Session("flash") = "Вие вече сте регистрирани и сте влезли";
@@ -9,11 +9,11 @@
     var form;
     if(method=="POST") {
 
-        form = new RegisterForm({}, Request);
+        form = new RegisterForm({}, collToArray(Request.Form));
         if(form.valid()) {
             form.save();
             Session("flash") = "Вие се регистрирахте успешно с " + form.fields.email.get_value() + "!";
-            //Response.Redirect("default.asp");
+            Response.Redirect("default.asp");
         }
     }
     else {
@@ -24,4 +24,4 @@
     blocks['title'] = "Регистрация";
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->
