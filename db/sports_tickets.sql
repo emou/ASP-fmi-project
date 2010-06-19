@@ -85,8 +85,8 @@ CREATE TABLE "Administrator" (
   CONSTRAINT "fk_Administrator_User"
     FOREIGN KEY ("User_email" )
     REFERENCES "User" ("email" )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ;
 
 CREATE INDEX "fk_Administrator_User" ON "Administrator" ("User_email" ASC) ;
@@ -443,3 +443,44 @@ INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Спийди', 'http://
 INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Еконт Експрес', 'http://www.econt.com/tariff-calculator/');
 INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Тип Топ Куриер', 'http://www.courier.bg/index.php?option=com_wrapper&view=wrapper&Itemid=53');
 INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Сити Експрес', 'http://www.city-express.com/PriceCheckerServicebg.aspx');
+
+
+CREATE LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION add_admin() RETURNS TRIGGER AS $new_admin$
+BEGIN
+    IF (NEW.is_admin = 't' AND OLD.is_admin = 'f') THEN
+        INSERT INTO "Administrator" VALUES(NEW.email);
+    END IF;
+    RETURN NEW;
+END;
+$new_admin$ LANGUAGE plpgsql;
+CREATE TRIGGER new_admin AFTER UPDATE OR INSERT ON "User"
+	FOR EACH ROW
+    EXECUTE PROCEDURE add_admin();
+
+CREATE OR REPLACE FUNCTION rm_admin() RETURNS TRIGGER AS $rm_admin$
+BEGIN
+    IF (OLD.is_admin = 't') THEN
+        DELETE FROM "Administrator" WHERE "User_email"=OLD.email;
+    END IF;
+    RETURN OLD;
+END;
+$rm_admin$ LANGUAGE plpgsql;
+
+CREATE TRIGGER rm_admin AFTER DELETE ON "User"
+	FOR EACH ROW
+    EXECUTE PROCEDURE rm_admin();
+
+
+CREATE OR REPLACE FUNCTION default_duration() RETURNS TRIGGER AS $default_duration$
+BEGIN
+    IF (NEW.duration = NULL) THEN
+        NEW.duration = (SELECT typical_duration FROM "Sport" where name=NEW."Sport_name");
+    END IF;
+    RETURN OLD;
+END;
+$default_duration$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_duration AFTER UPDATE OR INSERT  ON "Event"
+    FOR EACH ROW
+    EXECUTE PROCEDURE default_duration();

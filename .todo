@@ -6,28 +6,40 @@
             I think I got it - #include does what I want.
         </comment>
     </note>
+    <note priority="veryhigh" time="1275956518" done="1276888545">
+        Add an on_start function that initializes the mappings (mappings.js)? Revisit scopes: Application object == global scope?
+        <comment>
+            This is fucked, cannot work.
+        </comment>
+    </note>
+    <note priority="veryhigh" time="1276335191" done="1276888590">
+        Form: add action check, throw exception if no action
+        <comment>
+            Done.
+        </comment>
+    </note>
+    <note priority="high" time="1275773231" done="1276888627">
+        add unique constraint on (price,EventId) of TicketCategory
+        <comment>
+            I don't think this is needed. It is perfectly acceptable to have to different categories of tickets with the same price.
+        </comment>
+    </note>
     <note priority="medium" time="1275761707" done="1275762768">
         Add trigger on new orderitem to mark corresponding ticket as unavailable.
-    </note>
-    <note priority="veryhigh" time="1275956518">
-        Add an on_start function that initializes the mappings (mappings.js)? Revisit scopes: Application object == global scope?
-    </note>
-    <note priority="veryhigh" time="1276335191">
-        Form: add action check, throw exception if no action
-    </note>
-    <note priority="high" time="1275773038">
-        On insert/update of event, if duration is zero, set to sport's default duration.
-    </note>
-    <note priority="high" time="1275773231">
-        add unique constraint on (price,EventId) of TicketCategory
-    </note>
-    <note priority="medium" time="1275761808">
-        Add trigger on new/deleted administrator to mark corresponding user as admin/not admin.
     </note>
     <note priority="medium" time="1276102473" done="1276335292">
         Figure out how to get the key attributes of a table.
         <comment>
             With OpenSchema and code 28
+        </comment>
+    </note>
+    <note priority="high" time="1275773038">
+        On insert/update of event, if duration is zero, set to sport's default duration.
+    </note>
+    <note priority="medium" time="1275761808" done="1276892890">
+        Add trigger on new/deleted administrator to mark corresponding user as admin/not admin.
+        <comment>
+            Done.
         </comment>
     </note>
     <note priority="medium" time="1276334858">
