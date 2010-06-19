@@ -1,0 +1,135 @@
+/* General styles */
+body {
+    font-family: Georgia;
+    width: 930px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+form input, form textarea {
+    display: block;
+}
+
+a {
+    color: #97B5FF;
+}
+
+li {
+    list-style-type: none;
+}
+
+/* Header */
+h1 {
+    margin: 0;
+    width: 100%;
+    background-color: #AFFFA7;
+    padding: 10px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-style: italic;
+}
+
+h1 a {
+    color: black;
+    text-decoration: none;
+}
+
+#logged {
+    width: 100%;
+    background-color: #EBFFC1;
+    padding: 10px;
+    text-align: right;
+}
+
+#logout_link {
+    display: block;
+}
+
+
+#content {
+    float: left;
+    width: 700px;
+    min-height: 500px;
+}
+
+#sports_menu {
+    font-size: small;
+    margin: 10px;
+    padding: 15px;
+    margin-left: 0;
+    float: left;
+    width: 110px;
+    margin-right: 20px;
+    background-color: #D8E1FF;
+    border-left: 5px solid #EBFFC1;
+}
+
+#sports_menu li {
+    margin: 0;
+    padding: 0;
+}
+
+#sports_menu li {
+    list-style-type: none;
+}
+
+#footer {
+    clear: both;
+    text-align: center;
+    padding: 5px;
+    font-size: 11px;
+    background-color: #E3E3E3;
+}
+
+form {
+    width: 350px;
+    padding: 10px;
+}
+
+/* Messages to user */
+#flash {
+    background-color: #BAFF70;
+    margin-top: 5px;
+    padding: 10px;
+    color: gray;
+}
+
+.price {
+    color: green;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.small_date {
+    font-size: small;
+    padding: 1px;
+    display: block;
+    margin-right: 2px;
+}
+
+.form_errors {
+    font-size: 14px;
+    padding: 3px;
+    background-color: #FF6666;
+}
+
+.invalid_field input, .invalid_field textarea {
+    border: 1px solid #FF6666;
+}
+
+.invalid_field {
+    color: #FF6666;
+}
+
+.sport_name {
+}
+
+.place {
+    font-size: 15px;
+    font-style: oblique;
+}
+
+.buy_button p {
+    float: left;
+    margin: 0;
+}

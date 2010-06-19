@@ -20,7 +20,7 @@
         var row = new Tag('tr');
         row.append( new Tag('td', undefined, objects[i]) );
         row.append( new Tag('td', undefined, objects[i].admin_buttons()) );
-        content.append( row );
+        content.append(row);
     }
 
     blocks['content'] += content;
