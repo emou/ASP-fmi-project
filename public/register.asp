@@ -8,7 +8,6 @@
 
     var form;
     if(method=="POST") {
-
         form = new RegisterForm({}, collToArray(Request.Form));
         if(form.valid()) {
             form.save();

@@ -33,8 +33,7 @@ function Form(opts, field_defs, initial_data) {
 
     if(initial_data) {
         for(var k in field_defs) {
-            //XXX: String? What about numbers and dates...
-            field_defs[k]['value'] = new String( initial_data[k] || "" ).toString();
+            field_defs[k]['value'] = initial_data[k] || "";
         }
     }
 
@@ -184,11 +183,6 @@ function Field(attrs) {
 
     var label = attrs['label'];
 
-    /*
-     * if label is undefined -> name
-     * if label is null -> null
-     * if label is '' -> ''
-     */
     if(label === undefined) {
         this.label = attrs['name'];
     }
@@ -211,13 +205,22 @@ function Field(attrs) {
     this.value = attrs['value'];
     this.attributes = attrs;
 
-    if(attrs['type'] == 'textarea') {
-        this.tag = new Tag('textarea', this.attributes, this.attributes['value']);
-        delete this.attributes['type'];
-        delete this.attributes['value'];
-    }
-    else {
-        this.tag = new EmptyTag('input', this.attributes);
+    switch( attrs['type'] ) {
+        case 'textarea':
+            this.tag = new Tag('textarea', this.attributes, this.attributes['value']);
+            delete this.attributes['type'];
+            delete this.attributes['value'];
+            break;
+        case 'timestamp':
+            this.tag = new Tag('p', this.attributes, 'A date mada faka');
+            break;
+        case 'checkbox':
+            if(this.value == true) {
+                attrs['value'] = this.value? "on":"";
+                attrs['checked'] = 'checked';
+            }
+        default:
+            this.tag = new EmptyTag('input', this.attributes);
     }
 
 };

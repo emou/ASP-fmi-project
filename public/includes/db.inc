@@ -1,5 +1,6 @@
 <!-- #include FILE="util.inc" -->
 <!-- #include FILE="html.inc" -->
+<!-- #include FILE="form.inc" -->
 
 <% 
 var DB = {
@@ -14,7 +15,7 @@ var DB = {
 
       for (var i = 0; i<recordset.Fields.Count; i++){
         var field = recordset.Fields(i);
-        attributes[field.name] = field.value;
+        attributes[field.name] = collValue( field.value );
       }
 
       if(model!=undefined) {
@@ -71,7 +72,7 @@ var DB = {
   },
 
   quote_value: function(val) {
-    if(typeof(val) == 'string' || val instanceof String) {
+    if(typeof(val) == 'string' || val instanceof String || typeof(val) == 'object') {
         return "'" + val + "'";
     }
     return val;
@@ -79,6 +80,32 @@ var DB = {
 
   quote_column: function(col) {
       return DB.quote_table(col);
+  },
+
+  select_statement: function(table_name, what, filter, opts) {
+        var sql = 'select ' + what + ' from ' + DB.quote_table(table_name) + ' ';
+        opts = opts || {};
+
+        if (filter) {
+            sql += DB.where_clause(filter, opts);
+        }
+
+        if(opts.group_by) {
+            sql+= " GROUP BY " + DB.quote_column(opts.group_by);
+        }
+
+        if(opts.order_by) {
+            sql += " ORDER BY " + DB.quote_column(opts.order_by);
+            if(opts.order)
+                sql += opts.order;
+        }
+
+        if (opts.limit) {
+            //limit=0 doesn't make any sense
+            sql += " LIMIT " + opts.limit;
+        }
+
+        return sql;
   }
 
 };
@@ -89,7 +116,6 @@ DB.Column = function(options) {
 
     for(var k in options)
         this[k] = options[k];
-    //debug(this.name + ": " + options['DATA_TYPE']);
 
 };
 
@@ -100,12 +126,15 @@ DB.Column.prototype.field_def = function() {
 
     switch( db_type ) {
         case adBoolean:
+        case adChar:
             field_def.type = "checkbox";
+            break;
+        case adDBTimeStamp:
+            field_def.type = "timestamp";
             break;
         default:
             field_def.type = "text";
-
-        break;
+            break;
     }
 
     return field_def;
@@ -278,24 +307,14 @@ DB.model = function(db, table_name, opts) {
             }
 
             var sql;
+
             if(update || this.exists()) {
-                var rs = Server.CreateObject("ADODB.Recordset");
 
-                rs.Open(quoted_table_name, db._conn, 3, 3, 512);
-
-                for(var i in cols) {
-                    rs(cols[i]) = vals[i];
-                }
-
-                rs.Update();
-
-                rs.Close();
-
-                // XXX: Use a recordset? And refresh object?
-                // sql = 'update ' + quoted_table_name;
-                // sql+= DB.set_clause(db_attrs);
-                // sql+= DB.where_clause(this.pk_attributes());
-                // db.execute(sql);
+                /* This is so much cleaner than using a recordset! */
+                sql = 'update ' + quoted_table_name;
+                sql+= DB.set_clause(db_attrs);
+                sql+= DB.where_clause(this.pk_attributes());
+                db.execute(sql);
             }
             else {
                 var rs = Server.CreateObject("ADODB.Recordset");
@@ -424,14 +443,18 @@ DB.model = function(db, table_name, opts) {
                 params.push(k + '=' + encodeURIComponent(pk_attrs[k]) );
             }
 
-            return params.join('&');
+            return params.join('&amp;');
 
         },
 
         admin_buttons: function() {
-            var buttons = new Tag('span', {'class': 'buttons'});
-            buttons.append( new Tag('a', {href: '/admin/edit.asp?object_type=' + klass.table_name + '&' + this.http_key()}, 'Edit') );
-            return buttons + this.toString();
+            var http_key = this.http_key();
+            var buttons = "";
+
+            buttons+=( new Tag('a', {href: '/admin/edit.asp?object_type=' + klass.table_name + '&amp;' + http_key, 'class': 'edit'}, 'Редакция') );
+            buttons+=( new Form({action: '/admin/delete.asp?object_type=' + klass.table_name + '&amp;' + http_key, submit: 'Изтриване', 'class': 'delete'}) );
+
+            return buttons;
         }
 
     };
@@ -451,34 +474,16 @@ DB.model = function(db, table_name, opts) {
 
     klass.all = function(filter, opts) {
         opts = opts || {};
+        opts.order_by  = opts.order_by || klass.order_by;
+        opts.order  = opts.order || klass.order;
 
         var what = opts.fetch_only || '*';
+
         if(what.join) {
             what = what.join(',');
         }
 
-        var sql = 'select ' + what + ' from ' + DB.quote_table(klass.table_name) + ' ';
-
-        if (filter) {
-            sql += DB.where_clause(filter, opts);
-        }
-
-        if(opts.group_by) {
-            sql+= " GROUP BY " + DB.quote_column(opts.group_by);
-        }
-
-        opts.order_by  = opts.order_by || klass.order_by;
-        opts.order  = opts.order || klass.order;
-        if(opts.order_by) {
-            sql += " ORDER BY " + DB.quote_column(opts.order_by);
-            if(opts.order)
-                sql += opts.order;
-        }
-
-        if (opts.limit) {
-            //limit=0 doesn't make any sense
-            sql += " LIMIT " + opts.limit;
-        }
+        var sql = DB.select_statement(klass.table_name, what, filter, opts);
 
         return klass.model_query(sql);
     };

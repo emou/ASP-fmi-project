@@ -14,11 +14,13 @@
 
     blocks['content'] = "<h2>" + Model.plural + "</h2>";
 
-    var content = new Tag('ul', {id: 'object_list'});
+    var content = new Tag('table', {id: 'object_list'});
 
     for(var i in objects) {
-        var li = new Tag('li', undefined, objects[i].admin_buttons());
-        content.append(li);
+        var row = new Tag('tr');
+        row.append( new Tag('td', undefined, objects[i]) );
+        row.append( new Tag('td', undefined, objects[i].admin_buttons()) );
+        content.append( row );
     }
 
     blocks['content'] += content;

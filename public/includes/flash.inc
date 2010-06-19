@@ -9,6 +9,10 @@
         toString: function() {
             if(this._content != "")
                 return (new Tag('div', {id: 'flash'}, this._content)).toString();
+        },
+
+        set_content: function(c) {
+            this._content = c;
         }
     };
 %>

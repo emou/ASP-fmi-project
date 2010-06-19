@@ -5,7 +5,7 @@
 
         field_names: {
             email: "Електронен адрес",
-            password: "Парола",
+            password: "Парола в хеширан вид",
             first_name: "Собствено име",
             last_name: "Фамилно име",
             is_admin: "Администратор?",
@@ -13,7 +13,10 @@
             calculate_url: "Адрес за проверка на тарифи",
             typical_duration: "Типична продължителност в минути",
             event_name: "Име на проява",
-            phone_number: "Телефонен номер за връзка"
+            phone_number: "Телефонен номер за връзка",
+            start: "Начало",
+            duration: "Продължителност",
+            description: "Подробности"
         }
 
     };

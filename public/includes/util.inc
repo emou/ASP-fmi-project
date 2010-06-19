@@ -7,12 +7,35 @@ function debug(arg) {
     Response.write(arg + "<br/>");
 }
 
+/* Casts the value of an ASP collection */
+function collValue(v) {
+    var res;
+    switch( typeof(v) ) {
+        case 'date':
+            res = new Date(v);
+            break;
+        case 'number':
+            res = new Number(v).valueOf();
+            break;
+        case 'object':
+            res = new Object(v);
+            break;
+        default:
+            res = new String(v).toString();
+            break;
+    }
+
+    return res;
+}
+
 function collToArray(shit) {
     var reqEnumerator = new Enumerator(shit);
     var res={}
     while(!reqEnumerator.atEnd())
     {
-        res[reqEnumerator.item()]=shit(reqEnumerator.item());
+        var item = reqEnumerator.item();
+        var v = shit(item);
+        res[item] = collValue(v);
         reqEnumerator.moveNext();
     }
 
@@ -30,13 +53,17 @@ function array_to_html(arr) {
 
 
 function each(collection, block, include_functions) {
-    for (var key in collection)
-    if (typeof(collection[key]) === "function") {
-        if (include_functions === true)
-    block(key, collection[key]);
-} else
-    block(key, collection[key]);
-};
+    for (var key in collection) {
+        if (typeof(collection[key]) === "function") {
+            if (include_functions === true) {
+                block(key, collection[key]);
+            }
+        }
+        else {
+            block(key, collection[key]);
+        }
+    }
+}
 
 function map(collection, block) {
     var to_return = [];
@@ -131,4 +158,5 @@ function empty(ar) {
     }
     return true;
 }
+
 %>
