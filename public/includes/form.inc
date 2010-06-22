@@ -8,7 +8,6 @@ function FormError(msg) {
 
 /* A class representing a form.
  * Inspired by Django.
- * req should be an ASP Request object
  * */
 function Form(opts, field_defs, initial_data) {
 
@@ -33,6 +32,7 @@ function Form(opts, field_defs, initial_data) {
 
     if(initial_data) {
         for(var k in field_defs) {
+            field_defs[k]['name'] = k;
             field_defs[k]['value'] = initial_data[k] || "";
         }
     }
@@ -145,36 +145,42 @@ function make_form(opts, field_defs) {
 }
 
 function make_model_form(Model, opts, initial_data) {
+
     var cols = Model.columns;
-    var field_defs = {};
-    
+    var fields = {};
     for(var i in cols) {
-        field_defs[cols[i].name] = ( cols[i].field_def() );
-        field_defs[cols[i].name]['label'] = Settings.field_names[ cols[i].name ];
+        fields[ cols[i].name ] = cols[i].form_field(initial_data[cols[i].name]);
     }
 
-    var ModelForm = make_form(opts, field_defs);
-    ModelForm.prototype.save = function() {
-        var f = {};
+    function ModelFormClass(local_opts) {
+        update_attributes(opts, local_opts);
+        Form.call(this, opts, undefined);
+        this.fields = fields;
+    }
 
+    ModelFormClass.prototype             = new Form();
+    ModelFormClass.prototype.constructor = ModelFormClass;
+
+    ModelFormClass.prototype.save = function() {
+        var f = {};
         for(var k in this.fields) {
             f[k] = this.fields[k].get_value();
         }
 
         var model = new Model(f); 
-
         model.save();
     };
 
-    return new ModelForm(undefined, initial_data);
+    return new ModelFormClass();
 }
 
 /* A class representing a field.
  * Again, inspired by Django.
+ * Modifies argument!
  */
 function Field(attrs) {
-    /* Modifies argument! */
-    if(!attrs || !attrs['name'] || !attrs['type'])
+
+    if(attrs && (!attrs['name'] || !attrs['type']))
         throw new Error("Field construction error: you need to provide at least a name and a type!");
 
     this.valid = true;
@@ -191,8 +197,10 @@ function Field(attrs) {
         this.label = label;
     }
 
-    if(this.label)
+    if(this.label) {
+        this.label = Settings.field_names[this.label] || this.label;
         this.label = this.label.capitalize();
+    }
 
     var required = attrs['required'];
     if(required != false) {
@@ -207,38 +215,76 @@ function Field(attrs) {
 
     switch( attrs['type'] ) {
         case 'textarea':
-            this.tag = new Tag('textarea', this.attributes, this.attributes['value']);
+            this.core_html = new Tag('textarea', this.attributes, this.attributes['value']);
             delete this.attributes['type'];
             delete this.attributes['value'];
             break;
         case 'timestamp':
-            this.tag = new Tag('p', this.attributes, 'A date mada faka');
+            this.core_html = new DateWidget( this.attributes['value'] );
+
+            delete this.attributes['type'];
+            delete this.attributes['value'];
+            delete this.attributes['name'];
+            break;
+        case 'select':
+            var choices  = this.attributes['choices'];
+            var selected = this.attributes['selected'];
+            var is_selected = {};
+            is_selected[selected]="selected";
+
+            delete this.attributes['choices'];
+            delete this.attributes['type'];
+            delete this.attributes['selected'];
+
+            this.core_html = new Tag('select', this.attributes);
+
+            if(choices instanceof Range) {
+                for(var i=choices.from; i<=choices.to; i++) {
+                    this.core_html.append( new Tag('option', {value: i, 'selected': is_selected[i]}, i) );
+                }
+            }
+            else {
+                for(var i=0; i<choices.length; i++) {
+                    this.core_html.append( new Tag('option', {value: choices[i], 'selected': is_selected[choices[i]]}, choices[i]) );
+                }
+            }
+
             break;
         case 'checkbox':
-            if(this.value == true) {
-                attrs['value'] = this.value? "on":"";
-                attrs['checked'] = 'checked';
+            this.value = this.value=="0" || this.value===undefined ? 'f': 't'; /* PostgreSQL specific */
+
+            /* This is what will be sent when the form is
+             * submitted if the checkbox is checked, so we set
+             * this to always be 1 */
+            this.attributes['value'] = 't';
+
+            if(this.value == 't') {
+                this.attributes['checked'] = 'checked';
             }
         default:
-            this.tag = new EmptyTag('input', this.attributes);
+            this.core_html = new EmptyTag('input', this.attributes);
     }
+    /* this.core_html should be something with toString() method that represents the field in HTML.
+     * I currently use a Tag object, and a DateWidget object */
 
 };
 
+
 Field.prototype = {
-    toString: function(error) {
+    toString: function() {
         var p_attrs = this.valid ? {} : {'class': 'invalid_field'};
         var p=new Tag('p', p_attrs);
+
         if(this.label) {
             label = new Tag('label', {'for': this.attributes['id']}, this.label);
             p.append(label);
         }
-        p.append(this.tag);
+        p.append(this.core_html);
         return p.toString();
     },
 
     set_value: function(val) {
-        this.attributes['value']=val;
+        this.value=val;
     },
 
     get_value: function() {
@@ -261,6 +307,53 @@ Field.prototype = {
         this.valid = false;
     }
 };
+
+function DateWidget(date) {
+    // var days_in_month = Date.daysInMonth(date.getYear(), date.getMonth());
+    /* XXX: Until I make client-side scripting to partially submit the date */
+    var days_in_month = 31;
+    var selection = {};
+
+    if(date) {
+        date = new Date( date );
+
+        selection['day']    = date.getDate();
+        selection['month']  = date.getMonthName();
+        selection['year']   = date.getYear();
+        selection['hour']   = date.getHours();
+        selection['minute'] = date.getMinutes();
+    }
+
+    this.day  = new Field(  {name: 'day',   type: 'select', choices: new Range(1,days_in_month), selected: selection['day']});
+
+    this.month= new Field(  {name: 'month', type: 'select', choices: Date.MONTHS, selected: selection['month']});
+
+    this.year = new Field(  {name: 'year',  type: 'select',
+                            choices: new Range(Settings.min_year, Settings.min_year + Settings.year_offset),
+                            selected: selection['year']});
+
+    this.hour = new Field(  {name: 'hour',  type: 'select', choices: new Range(0,23), 
+                            selected: selection['hour']});
+
+    this.minute = new Field({name: 'minute',type: 'select',
+                            choices: new Range(0,60),
+                            selected: selection['hour']});
+
+}
+
+DateWidget.prototype.toString = function() {
+    return  this.day.toString() + this.month.toString() + this.year.toString() + this.hour.toString() + this.minute.toString();
+}
+
+/* A Range 'struct'.
+ * This should be used by the Field constructor,
+ * hence the Field constructor and the Range constructor
+ * are coupled.
+ * */
+function Range(from, to) {
+    this.from = from;
+    this.to = to;
+}
 
 LoginForm = make_form(
     {action: 'login.asp', submit: 'Вход', name: 'Вход', id: 'login_form'},

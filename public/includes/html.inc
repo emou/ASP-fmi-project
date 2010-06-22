@@ -5,7 +5,7 @@
 function Tag(name, attributes, content) {
     this.name = name;
     this.attributes = attributes;
-    this.content = content?[content]:[];
+    this.content = content!=null?[content]:[];
 }
 
 Tag.prototype = {
@@ -36,7 +36,7 @@ EmptyTag.prototype = {
 Tag.stringify_attributes = function(attributes) {
     var str = '';
     for(var k in attributes) {
-        if(attributes[k]) {
+        if(attributes[k]!=null) {
             str += ' ' + k + '="' + attributes[k] + '"';
         }
     }

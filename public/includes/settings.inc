@@ -16,8 +16,19 @@
             phone_number: "Телефонен номер за връзка",
             start: "Начало",
             duration: "Продължителност",
-            description: "Подробности"
-        }
+            description: "Подробности",
+
+            month: "Месец",
+            year: "Година",
+            day: "Ден",
+            hour: "Час",
+            minute: "Минути"
+        },
+
+        /* Chose years from min_year, year_range in forms */
+        min_year: 2009,
+        year_offset: 5
+
 
     };
 %>

@@ -119,25 +119,24 @@ DB.Column = function(options) {
 
 };
 
-DB.Column.prototype.field_def = function() {
+DB.Column.prototype.form_field = function(initial_data) {
     var db_type = this.DATA_TYPE;
-
-    var field_def = {};
+    var field_opts = {name: this.name, value: initial_data};
 
     switch( db_type ) {
         case adBoolean:
         case adChar:
-            field_def.type = "checkbox";
+            field_opts['type'] = "checkbox";
             break;
         case adDBTimeStamp:
-            field_def.type = "timestamp";
+            field_opts['type'] = "timestamp";
             break;
         default:
-            field_def.type = "text";
+            field_opts['type'] = "text";
             break;
     }
 
-    return field_def;
+    return new Field(field_opts);
 };
 
 /* A factory for connections */
@@ -262,11 +261,11 @@ DB.model = function(db, table_name, opts) {
     rs               = klass.db._conn.OpenSchema(28, [null, null, klass.table_name]); // 28 means: return primary keys
     klass.primary_keys = [];
     while (rs.EOF != true) {
-      var attributes = {};
 
       klass.primary_keys.push(rs('column_name').value); // "cast" to string
       rs.MoveNext();
     }
+    rs.close();
 
     // instance methods
     klass.prototype = {
@@ -318,7 +317,7 @@ DB.model = function(db, table_name, opts) {
             }
             else {
                 var rs = Server.CreateObject("ADODB.Recordset");
-                rs.CursorLocation = 3; // adUseClient. Without this, resync() does not work!
+                rs.CursorLocation = 3; /* adUseClient. Without this, resync() does not work! */
                 rs.Open(quoted_table_name, db._conn, 3, 3, 512);
 
                 rs.AddNew(cols, vals);
@@ -338,8 +337,8 @@ DB.model = function(db, table_name, opts) {
          * - If the model has a serial (autoincrement, AI) field,
          *   that was specified in the creation of the model,
          *   to refresh the row, we use absolutePosition and Requery().
-         *   - If there is column named 'id', we assume it to be AI
-         *     and to the same as above.
+         *   - If there is a column named 'id', we assume it to be AI
+         *     and do the same as above.
          *
          * - If klass.serial is null, we do not make the assumption about
          *   the 'ID' column

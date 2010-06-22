@@ -7,7 +7,7 @@ function debug(arg) {
     Response.write(arg + "<br/>");
 }
 
-/* Casts the value of an ASP collection */
+/* Casts a value of an ASP collection */
 function collValue(v) {
     var res;
     switch( typeof(v) ) {
@@ -110,17 +110,22 @@ function format_price(p) {
     return p.toFixed(2) + " лв.";
 }
 
+Date.WEEKDAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък",  "Петък", "Събота", "Неделя"];
+Date.MONTHS = ["Януари", "Февруари", "Март", "Април", "Юни", "Юли", "Август", "Септември","Октомври", "Ноември", "Декември"];
 
 Date.prototype.getDayName = function() {
-    var DAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък",  "Петък", "Събота", "Неделя"];
-    return DAYS[this.getDay()];
+    return Date.WEEKDAYS[this.getDay()];
 }
 
 Date.prototype.getMonthName = function() {
-    var MONTHS = ["Януари", "Февруари", "Март", "Април", "Юни", "Юли", "Август", "Септември","Октомври", "Ноември", "Декември"];
 
-    return MONTHS[this.getMonth()];
+    return Date.MONTHS[this.getMonth()];
 }
+
+Date.daysInMonth = function(month,year) {
+    var dd = new Date(year, month, 0);
+    return dd.getDate();
+} 
 
 function format_date(s, opts) {
     var d = new Date(s);

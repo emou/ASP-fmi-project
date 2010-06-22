@@ -460,14 +460,14 @@ CREATE TRIGGER new_admin AFTER UPDATE OR INSERT ON "User"
 
 CREATE OR REPLACE FUNCTION rm_admin() RETURNS TRIGGER AS $rm_admin$
 BEGIN
-    IF (OLD.is_admin = 't') THEN
+    IF (NEW.is_admin='f' AND OLD.is_admin = 't') THEN
         DELETE FROM "Administrator" WHERE "User_email"=OLD.email;
     END IF;
     RETURN OLD;
 END;
 $rm_admin$ LANGUAGE plpgsql;
 
-CREATE TRIGGER rm_admin AFTER DELETE ON "User"
+CREATE TRIGGER rm_admin AFTER UPDATE ON "User"
 	FOR EACH ROW
     EXECUTE PROCEDURE rm_admin();
 

@@ -1,0 +1,86 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Address	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Address" ($/;"	t
+Address.city	../../../project/db/sports_tickets.sql	/^  "city" VARCHAR(60) NOT NULL ,$/;"	F
+Address.details	../../../project/db/sports_tickets.sql	/^  "details" VARCHAR(100) NULL ,$/;"	F
+Address.id	../../../project/db/sports_tickets.sql	/^  "id" SERIAL ,$/;"	F
+Administrator	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Administrator" ($/;"	t
+Administrator.User_email	../../../project/db/sports_tickets.sql	/^  "User_email" VARCHAR(100) NOT NULL ,$/;"	F
+Administrator.fk_Administrator_User	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Administrator_User" ON "Administrator" ("User_email" ASC) ;$/;"	i
+Cart	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Cart" ($/;"	t
+Cart.Client_User_email	../../../project/db/sports_tickets.sql	/^  "Client_User_email" VARCHAR(100) NOT NULL ,$/;"	F
+Cart.fk_Cart_Client	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Cart_Client" ON "Cart" ("Client_User_email" ASC) ;$/;"	i
+CartItem	../../../project/db/sports_tickets.sql	/^CREATE  TABLE "CartItem" ($/;"	t
+CartItem.Cart_Client_User_email	../../../project/db/sports_tickets.sql	/^  "Cart_Client_User_email" VARCHAR(100) NOT NULL ,$/;"	F
+CartItem.Cart_User_email	../../../project/db/sports_tickets.sql	/^  "Cart_User_email" VARCHAR(100) NOT NULL ,$/;"	F
+CartItem.TicketCategory_id	../../../project/db/sports_tickets.sql	/^  "TicketCategory_id" INT NOT NULL ,$/;"	F
+CartItem.count	../../../project/db/sports_tickets.sql	/^  "count" INT NOT NULL DEFAULT 1 ,$/;"	F
+CartItem.fk_CartItem_Cart	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_CartItem_Cart" ON "CartItem" ("Cart_Client_User_email" ASC) ;$/;"	i
+CartItem.fk_CartItem_TicketCategory	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_CartItem_TicketCategory" ON "CartItem" ("TicketCategory_id" ASC) ;$/;"	i
+Client	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Client" ($/;"	t
+Client.Address_id	../../../project/db/sports_tickets.sql	/^  "Address_id" INT NOT NULL ,$/;"	F
+Client.User_email	../../../project/db/sports_tickets.sql	/^  "User_email" VARCHAR(100) NOT NULL ,$/;"	F
+Client.fk_Client_Address	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Client_Address" ON "Client" ("Address_id" ASC) ;$/;"	i
+Client.fk_Client_User	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Client_User" ON "Client" ("User_email" ASC) ;$/;"	i
+Client.phone_number	../../../project/db/sports_tickets.sql	/^  "phone_number" VARCHAR(25) NOT NULL ,$/;"	F
+Courier	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Courier" ($/;"	t
+Courier.calculate_url	../../../project/db/sports_tickets.sql	/^  "calculate_url" VARCHAR(120) NOT NULL ,$/;"	F
+Courier.name	../../../project/db/sports_tickets.sql	/^  "name" VARCHAR(100) NOT NULL ,$/;"	F
+Event	../../../project/db/sports_tickets.sql	/^CREATE  TABLE "Event" ($/;"	t
+Event.Place_name	../../../project/db/sports_tickets.sql	/^  "Place_name" VARCHAR(150) NOT NULL ,$/;"	F
+Event.Sport_name	../../../project/db/sports_tickets.sql	/^  "Sport_name" VARCHAR(100) NOT NULL ,$/;"	F
+Event.duration	../../../project/db/sports_tickets.sql	/^  "duration" TIME NULL ,$/;"	F
+Event.fk_Event_Place	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Event_Place" ON "Event" ("Place_name" ASC) ;$/;"	i
+Event.fk_Event_Sport	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Event_Sport" ON "Event" ("Sport_name" ASC) ;$/;"	i
+Event.id	../../../project/db/sports_tickets.sql	/^  "id" SERIAL ,$/;"	F
+Event.name	../../../project/db/sports_tickets.sql	/^  "name" VARCHAR(100) NULL ,$/;"	F
+Event.start	../../../project/db/sports_tickets.sql	/^  "start" TIMESTAMP NOT NULL ,$/;"	F
+Order	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Order" ($/;"	t
+Order.Courier_name	../../../project/db/sports_tickets.sql	/^  "Courier_name" VARCHAR(100) NOT NULL ,$/;"	F
+Order.User_email	../../../project/db/sports_tickets.sql	/^  "User_email" VARCHAR(100) NOT NULL ,$/;"	F
+Order.created_at	../../../project/db/sports_tickets.sql	/^  "created_at" TIMESTAMP NOT NULL ,$/;"	F
+Order.fk_Order_Courier	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Order_Courier" ON "Order" ("Courier_name" ASC) ;$/;"	i
+Order.fk_Order_User	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Order_User" ON "Order" ("User_email" ASC) ;$/;"	i
+Order.id	../../../project/db/sports_tickets.sql	/^  "id" SERIAL ,$/;"	F
+OrderItem	../../../project/db/sports_tickets.sql	/^CREATE TABLE "OrderItem" ($/;"	t
+OrderItem.Order_id	../../../project/db/sports_tickets.sql	/^  "Order_id" INT NOT NULL ,$/;"	F
+OrderItem.TicketCategory_id	../../../project/db/sports_tickets.sql	/^  "TicketCategory_id" INT NOT NULL ,$/;"	F
+OrderItem.count	../../../project/db/sports_tickets.sql	/^  "count" INT NOT NULL DEFAULT 1 ,$/;"	F
+OrderItem.fk_OrderItem_Order	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_OrderItem_Order" ON "OrderItem" ("Order_id" ASC) ;$/;"	i
+OrderItem.fk_OrderItem_TicketCategory	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_OrderItem_TicketCategory" ON "OrderItem" ("TicketCategory_id" ASC) ;$/;"	i
+OrderItem.id	../../../project/db/sports_tickets.sql	/^  "id" SERIAL ,$/;"	F
+Place	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Place" ($/;"	t
+Place.Address_id	../../../project/db/sports_tickets.sql	/^  "Address_id" INT NOT NULL ,$/;"	F
+Place.description	../../../project/db/sports_tickets.sql	/^  "description" VARCHAR(255) NULL ,$/;"	F
+Place.fk_Place_Address	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Place_Address" ON "Place" ("Address_id" ASC) ;$/;"	i
+Place.name	../../../project/db/sports_tickets.sql	/^  "name" VARCHAR(100) NOT NULL ,$/;"	F
+SQL	../../../project/db/Makefile	/^SQL=psql -h 192.168.0.4 -U postgres -d postgres$/;"	m
+Sport	../../../project/db/sports_tickets.sql	/^CREATE TABLE "Sport" ($/;"	t
+Sport.event_name	../../../project/db/sports_tickets.sql	/^  "event_name" VARCHAR(45) NULL ,$/;"	F
+Sport.name	../../../project/db/sports_tickets.sql	/^  "name" VARCHAR(100) NOT NULL ,$/;"	F
+Sport.typical_duration	../../../project/db/sports_tickets.sql	/^  "typical_duration" TIME NULL ,$/;"	F
+TicketCategory	../../../project/db/sports_tickets.sql	/^CREATE TABLE "TicketCategory" ($/;"	t
+TicketCategory.Event_id	../../../project/db/sports_tickets.sql	/^  "Event_id" INT NOT NULL ,$/;"	F
+TicketCategory.count	../../../project/db/sports_tickets.sql	/^  "count" INT NULL ,$/;"	F
+TicketCategory.fk_Ticket_Event	../../../project/db/sports_tickets.sql	/^CREATE INDEX "fk_Ticket_Event" ON "TicketCategory" ("Event_id" ASC) ;$/;"	i
+TicketCategory.id	../../../project/db/sports_tickets.sql	/^  "id" SERIAL ,$/;"	F
+TicketCategory.name	../../../project/db/sports_tickets.sql	/^  "name" VARCHAR(45) NOT NULL ,$/;"	F
+TicketCategory.price	../../../project/db/sports_tickets.sql	/^  "price" DECIMAL(9,2) NOT NULL ,$/;"	F
+User	../../../project/db/sports_tickets.sql	/^CREATE TABLE "User" ($/;"	t
+User.email	../../../project/db/sports_tickets.sql	/^  "email" VARCHAR(100) NOT NULL ,$/;"	F
+User.first_name	../../../project/db/sports_tickets.sql	/^  "first_name" VARCHAR(45) NULL ,$/;"	F
+User.is_admin	../../../project/db/sports_tickets.sql	/^  "is_admin" BOOLEAN NULL DEFAULT FALSE ,$/;"	F
+User.last_name	../../../project/db/sports_tickets.sql	/^  "last_name" VARCHAR(45) NULL ,$/;"	F
+User.password	../../../project/db/sports_tickets.sql	/^  "password" VARCHAR(128) NOT NULL ,$/;"	F
+action	../../../ASP-MVC/default.asp	/^	dim action$/;"	v
+add_admin	../../../project/db/sports_tickets.sql	/^CREATE OR REPLACE FUNCTION add_admin() RETURNS TRIGGER AS $new_admin\$$/;"	f
+adoConn	../../../default.asp	/^dim adoConn$/;"	v
+adoRS	../../../default.asp	/^dim adoRS$/;"	v
+counter	../../../default.asp	/^dim counter$/;"	v
+default_duration	../../../project/db/sports_tickets.sql	/^CREATE OR REPLACE FUNCTION default_duration() RETURNS TRIGGER AS $default_duration\$$/;"	f
+model	../../../ASP-MVC/default.asp	/^	dim model$/;"	v
+view	../../../ASP-MVC/default.asp	/^	dim view	$/;"	v
