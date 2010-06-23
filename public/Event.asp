@@ -29,8 +29,8 @@
             row.append( new Tag('td', {}, tickets[i].count) );
             row.append( new Tag('td', {}, tickets[i].name) );
             row.append( new Tag('td', {}, format_price(tickets[i].price)) );
-            row.append( new Tag('td', {}, new Form({action: 'cart.asp?id=' + tickets[i].id, submit: 'Добави', 'class': 'buy_button'},
-                                [{type: 'text', size: 3, name: 'count', label: null, value: 1}]) ) );
+            row.append( new Tag('td', {}, new Form({action: 'Cart.asp?id=' + tickets[i].id, submit: 'Добави', 'class': 'buy_button'},
+            {'count': {type: 'text', size: 3, id: 'count_' + i, label: null, value: 1}}) ) );
 
             prices_table.append(row);
         }

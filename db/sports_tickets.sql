@@ -40,8 +40,8 @@ CREATE TABLE "Client" (
   CONSTRAINT "fk_Client_User"
     FOREIGN KEY ("User_email" )
     REFERENCES "User" ("email" )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT "fk_Client_Address"
     FOREIGN KEY ("Address_id" )
     REFERENCES "Address" ("id" )
@@ -52,7 +52,6 @@ CREATE TABLE "Client" (
 CREATE INDEX "fk_Client_User" ON "Client" ("User_email" ASC) ;
 
 CREATE INDEX "fk_Client_Address" ON "Client" ("Address_id" ASC) ;
-
 
 -- -----------------------------------------------------
 -- Table "Place"
@@ -247,7 +246,6 @@ CREATE INDEX "fk_Cart_Client" ON "Cart" ("Client_User_email" ASC) ;
 DROP TABLE IF EXISTS "CartItem"  CASCADE;
 
 CREATE  TABLE "CartItem" (
-  "Cart_User_email" VARCHAR(100) NOT NULL ,
   "count" INT NOT NULL DEFAULT 1 ,
   "TicketCategory_id" INT NOT NULL ,
   "Cart_Client_User_email" VARCHAR(100) NOT NULL ,
@@ -443,7 +441,6 @@ INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Спийди', 'http://
 INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Еконт Експрес', 'http://www.econt.com/tariff-calculator/');
 INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Тип Топ Куриер', 'http://www.courier.bg/index.php?option=com_wrapper&view=wrapper&Itemid=53');
 INSERT INTO "Courier" ("name", "calculate_url") VALUES ('Сити Експрес', 'http://www.city-express.com/PriceCheckerServicebg.aspx');
-
 
 CREATE LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION add_admin() RETURNS TRIGGER AS $new_admin$

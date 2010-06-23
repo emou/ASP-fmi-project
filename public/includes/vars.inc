@@ -6,9 +6,6 @@
     /* GET/POST request */
     var method = Request.ServerVariables("REQUEST_METHOD");
 
-    /* If this is set, then we have a logged in user */
-    var session_email = Session("email");
-
     /* Blocks for the pseudo-template */
     var blocks = { };
 
@@ -26,7 +23,18 @@
         logged = "Влезли сте като " + current_user.email + " ";
         logged+= new Tag("a", {href: "/logout.asp", id: "logout_link"}, "Изход");
 
-        //cart = current_user.associated_set("Client")[0].associated_set("Cart")[0];
+        var client = Client.get({User_email: current_user.email});
+        if(client) {
+            var cart   = client.find_cart();
+            var cart_items = cart.items();
+            if(cart_items.length>0) {
+                blocks['cart'] = "Имате " + cart_items.length + " артикул" + (cart_items.length>1?"а":"") + ' в <a href="/Cart.asp">количката</a>';
+            }
+            else {
+                blocks['cart'] = "Количката ви е празна";
+            }
+
+        }
     }
     else {
         logged = "Не сте влезли " + " ";
@@ -42,6 +50,5 @@
     for(i in sports) {
         blocks['sports_menu'].append(new Tag('li', {}, sports[i].html_link()));
     }
-
 
 %>

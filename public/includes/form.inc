@@ -12,7 +12,7 @@ function FormError(msg) {
 function Form(opts, field_defs, initial_data) {
 
     if(opts && !opts['action']) {
-        /* XXX A hack: opts==undefined is permitted for inheritance */
+        /* XXX opts==undefined is permitted for inheritance */
         throw new Error("You need to provide an action for the form.");
     }
 
@@ -185,7 +185,9 @@ function Field(attrs) {
 
     this.valid = true;
 
-    attrs['id'] = (attrs['id']) || (attrs['name'] + '_id');
+    if(attrs['id']===undefined) {
+        attrs['id'] = attrs['name'] + '_id';
+    }
 
     var label = attrs['label'];
 
@@ -213,6 +215,10 @@ function Field(attrs) {
     this.value = attrs['value'];
     this.attributes = attrs;
 
+
+    /* Why, oh, why didn't I make subclasses??!?!
+     * No time to do it now (deadline).
+     * */
     switch( attrs['type'] ) {
         case 'textarea':
             this.core_html = new Tag('textarea', this.attributes, this.attributes['value']);
@@ -255,7 +261,7 @@ function Field(attrs) {
 
             /* This is what will be sent when the form is
              * submitted if the checkbox is checked, so we set
-             * this to always be 1 */
+             * this to always be 't' */
             this.attributes['value'] = 't';
 
             if(this.value == 't') {

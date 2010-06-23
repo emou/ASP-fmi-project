@@ -57,24 +57,27 @@
     this.password = User._hash_pass(pass);
   };
 
-  User.prototype.find_cart = function() {
-      return this.associated("Cart") || Cart.create({User_email: this.email});
-  };
-
-  User.create = function(email, pass) {
-      this.set_password(pass);
-      this.email=email; 
-      this.save();
+  Client.prototype.find_cart = function() {
+       var filter = {Client_User_email: this.User_email};
+       return Cart.get(filter) || Cart.create(filter);
   };
 
   User.prototype.toString = function() {
       return this.first_name + ' ' + this.last_name;
   };
 
+  User.prototype.is_client = function() {
+      return Client.exists({User_email: this.email}); //!this.is_admin;
+  };
+
   User.current = function() {
       if(Session("email")) {
           return User.get({email: Session("email")});
       }
+  };
+
+  Administrator.prototype.toString = function() {
+      return this.User_email;
   };
 
   Event.prototype.toString = function() {
@@ -84,5 +87,35 @@
   Place.prototype.toString = function() {
       return this.name;
   };
+
+  TicketCategory.prototype.can_buy = function(n) {
+      return n<=this.count;
+  };
+
+  Cart.prototype.items = function() {
+      return this.associated_set("CartItem");
+  };
+
+  Cart.prototype._cart_item_filter = function(ticket) {
+      return { Cart_Client_User_email: this.Client_User_email, TicketCategory_id: ticket.id };
+  };
+
+  Cart.prototype.find_item = function(ticket) {
+      var ci = CartItem.create( this._cart_item_filter(ticket) );
+      return ci;
+  };
+
+  Cart.prototype.add_item = function(ticket, cnt) {
+      var ci = this.find_item(ticket);
+      if(ci.associated("TicketCategory").can_buy(ci.count + cnt)) {
+          ci.count += cnt;
+          ci.save();
+      }
+  };
+
+  Cart.prototype.remove_item = function(ticket) {
+      var ci = CartItem.get( this._cart_item_filter(ticket) );
+  };
+
 
 %>

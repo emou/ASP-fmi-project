@@ -14,16 +14,20 @@
 
     blocks['content'] = "<h2>" + Model.plural + "</h2>";
 
-    var content = new Tag('table', {id: 'object_list'});
-
-    for(var i in objects) {
-        var row = new Tag('tr');
-        row.append( new Tag('td', undefined, objects[i]) );
-        row.append( new Tag('td', undefined, objects[i].admin_buttons()) );
-        content.append(row);
+    if(objects.length) {
+        var content = new Tag('table', {id: 'object_list'});
+        for(var i in objects) {
+            var row = new Tag('tr');
+            row.append( new Tag('td', undefined, objects[i]) );
+            row.append( new Tag('td', undefined, objects[i].admin_buttons()) );
+            content.append(row);
+        }
+        blocks['content'] += content;
+    }
+    else {
+        blocks['content'] += "<p>Няма налични " + Model.plural + ".</p>";
     }
 
-    blocks['content'] += content;
 %>
 
 <!-- #include FILE="includes/template.inc" -->

@@ -15,6 +15,7 @@
     <body>
         <div id="logged">
             <%= logged %>
+            <%= blocks['cart'] %>
         </div>
         <h1><a href="/default.asp">Онлайн спортни билети</a></h1>
         <%= blocks['sports_menu'] %>

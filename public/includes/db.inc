@@ -91,7 +91,7 @@ var DB = {
         }
 
         if(opts.group_by) {
-            sql+= " GROUP BY " + DB.quote_column(opts.group_by);
+            sql += " GROUP BY " + DB.quote_column(opts.group_by);
         }
 
         if(opts.order_by) {
@@ -106,7 +106,15 @@ var DB = {
         }
 
         return sql;
-  }
+    },
+
+    delete_statement: function(table_name, filter, opts) {
+        var opts = opts || {};
+        var sql = 'delete from ' + DB.quote_table(table_name) + ' ';
+        sql += DB.where_clause(filter, opts);
+
+        return sql;
+    }
 
 };
 
@@ -137,6 +145,16 @@ DB.Column.prototype.form_field = function(initial_data) {
     }
 
     return new Field(field_opts);
+};
+
+DB.Column.prototype.get_value = function(val) {
+        var db_type = this.DATA_TYPE;
+        switch( db_type ) {
+            case adChar:
+                val = val=="1";
+                break;
+        }
+        return val;
 };
 
 /* A factory for connections */
@@ -247,7 +265,7 @@ DB.model = function(db, table_name, opts) {
     function klass(attributes) {
         for(var i in klass.columns) {
             var c   = klass.columns[i].name;
-            this[c] = attributes[c]===undefined?null:attributes[c];
+            this[c] = klass.columns[i].get_value(attributes[c]);
         }
     };
 
@@ -310,9 +328,9 @@ DB.model = function(db, table_name, opts) {
             if(update || this.exists()) {
 
                 /* This is so much cleaner than using a recordset! */
-                sql = 'update ' + quoted_table_name;
-                sql+= DB.set_clause(db_attrs);
-                sql+= DB.where_clause(this.pk_attributes());
+                sql  = 'update ' + quoted_table_name;
+                sql += DB.set_clause(db_attrs);
+                sql += DB.where_clause(this.pk_attributes());
                 db.execute(sql);
             }
             else {
@@ -361,6 +379,17 @@ DB.model = function(db, table_name, opts) {
                  this[cols[i].name] = rs.Fields(cols[i].name).value;
                  //debug(this[cols[i].name]);
             }
+
+        },
+
+        /* delete is a keyword in Javascript */
+        remove: function() {
+            if(!this.exists())
+                throw new Error("Object does not exist!");
+            
+            var sql = DB.delete_statement(klass.table_name, this.pk_attributes());
+
+            klass.db.execute(sql);
 
         },
 
@@ -431,7 +460,7 @@ DB.model = function(db, table_name, opts) {
         },
 
         html_link: function(content) {
-            return new Tag('a', {href: klass.table_name + '.asp?' + this.http_key()}, content || this.name || this);
+            return new Tag('a', { href: klass.table_name + '.asp?' + this.http_key() }, content || this.name || this);
         },
 
         http_key: function() {
@@ -451,7 +480,17 @@ DB.model = function(db, table_name, opts) {
             var buttons = "";
 
             buttons+=( new Tag('a', {href: '/admin/edit.asp?object_type=' + klass.table_name + '&amp;' + http_key, 'class': 'edit'}, 'Редакция') );
-            buttons+=( new Form({action: '/admin/delete.asp?object_type=' + klass.table_name + '&amp;' + http_key, submit: 'Изтриване', 'class': 'delete'}) );
+
+            var pks = this.pk_attributes();
+            var field_defs = {};
+            for(var k in pks) {
+                field_defs[k] = {name: k, type: 'hidden', value: pks[k], label: null, id: null};
+            }
+
+            var delete_form = new Form({action: '/admin/delete.asp?object_type=' + klass.table_name, submit: 'Изтриване', 'class': 'delete'},
+                                    field_defs);
+
+            buttons+=( delete_form );
 
             return buttons;
         }
@@ -498,14 +537,22 @@ DB.model = function(db, table_name, opts) {
 
     klass.get = function(pks) {
         fst = klass.first(pks);
-        if(!fst)
-            throw new Error(klass.table_name + " does not exist!");
         return fst;
     };
 
     klass.create = function(attributes) {
         var model = new klass(attributes);
+        if(klass.table_name == "CartItem") {
+            var debug = [];
+            for(var i in attributes) {
+                debug.push("\n" + i.length);
+                debug.push("\n" + ("TicketCategory_id" == i));
+                debug.push(i + " = " + attributes[i]);
+            }
+            throw new Error(new Number(attributes["TicketCategory_id"]));
+        }
         model.save();
+        return model;
     };
 
     klass.count = function(filter, opts) {
