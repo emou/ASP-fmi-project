@@ -18,7 +18,7 @@
             <%= blocks['cart'] %>
         </div>
         <h1><a href="/default.asp">Онлайн спортни билети</a></h1>
-        <a href="/search.asp">Търсене</a>
+        <div id="search"><a href="/search.asp">Търсене</a></div>
         <%= blocks['sports_menu'] %>
         <!-- begin content -->
         <div id="path">

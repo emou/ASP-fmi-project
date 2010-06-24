@@ -7,4 +7,4 @@
     blocks['content'] = "";
 %>
 
-<!-- #include FILE="template.inc" -->
+<!-- #include FILE="includes/template.inc" -->

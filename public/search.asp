@@ -33,16 +33,17 @@
         }
     );
 
-
     content += search_form;
-    var sql = 'select * from "Event" where "start"<' + format_date_for_sql(to) + ' AND "start">' + format_date_for_sql(from);
-    var res = Event.model_query(sql);
-
-    var ul = new Tag('ul');
-    for(var i in res) {
-        ul.append(new Tag('li', {}, res[i].html_link()));
+    if(from.getYear() && to.getYear()) {
+        var sql = 'select * from "Event" where "start"<' + format_date_for_sql(to) + ' AND "start">' + format_date_for_sql(from);
+        var res = Event.model_query(sql);
+        var ul = new Tag('ul');
+        for(var i in res) {
+            ul.append(new Tag('li', {}, res[i].html_link()));
+        }
+        content += ul;
     }
-    content += ul;
+
 
     blocks['content'] = content;
 %>
