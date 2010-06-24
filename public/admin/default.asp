@@ -12,6 +12,13 @@
         content.append( li );
     }
 
+    content += "<h2>Статистика</h2>";
+
+    content += '<ul class="stat"> \
+                    <li><a href = "monthly_stat.asp">За месец</a></li> \
+                    <li><a href = "event_stat.asp">По прояви</a></li> \
+               </ul>'
+
     blocks['content'] += content;
 %>
 

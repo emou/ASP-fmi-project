@@ -13,7 +13,6 @@ CREATE TABLE "User" (
   PRIMARY KEY ("email") )
 ;
 
-
 -- -----------------------------------------------------
 -- Table "Address"
 -- -----------------------------------------------------
@@ -26,7 +25,6 @@ CREATE TABLE "Address" (
   PRIMARY KEY ("id") )
 ;
 
-
 -- -----------------------------------------------------
 -- Table "Client"
 -- -----------------------------------------------------
@@ -38,8 +36,8 @@ CREATE TABLE "Client" (
   "Address_id" INT NOT NULL ,
   PRIMARY KEY ("User_email") ,
   CONSTRAINT "fk_Client_User"
-    FOREIGN KEY ("User_email" )
-    REFERENCES "User" ("email" )
+    FOREIGN KEY ("User_email")
+    REFERENCES "User" ("email")
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT "fk_Client_Address"
@@ -174,7 +172,7 @@ DROP TABLE IF EXISTS "Order"  CASCADE;
 CREATE TABLE "Order" (
   "id" SERIAL ,
   "User_email" VARCHAR(100) NOT NULL ,
-  "created_at" TIMESTAMP NOT NULL ,
+  "created_at" TIMESTAMP NOT NULL DEFAULT 'now',
   "Courier_name" VARCHAR(100) NOT NULL ,
   PRIMARY KEY ("id") ,
   CONSTRAINT "fk_Order_User"
@@ -246,7 +244,7 @@ CREATE INDEX "fk_Cart_Client" ON "Cart" ("Client_User_email" ASC) ;
 DROP TABLE IF EXISTS "CartItem"  CASCADE;
 
 CREATE  TABLE "CartItem" (
-  "count" INT NOT NULL DEFAULT 1 ,
+  "count" INT NOT NULL DEFAULT 0 ,
   "TicketCategory_id" INT NOT NULL ,
   "Cart_Client_User_email" VARCHAR(100) NOT NULL ,
   PRIMARY KEY ("TicketCategory_id", "Cart_Client_User_email") ,
@@ -258,8 +256,8 @@ CREATE  TABLE "CartItem" (
   CONSTRAINT "fk_CartItem_Cart"
     FOREIGN KEY ("Cart_Client_User_email" )
     REFERENCES "Cart" ("Client_User_email" )
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE 
+    ON UPDATE CASCADE)
 ;
 
 CREATE INDEX "fk_CartItem_TicketCategory" ON "CartItem" ("TicketCategory_id" ASC) ;
@@ -468,6 +466,16 @@ CREATE TRIGGER rm_admin AFTER UPDATE ON "User"
 	FOR EACH ROW
     EXECUTE PROCEDURE rm_admin();
 
+CREATE OR REPLACE FUNCTION count_decrement() RETURNS TRIGGER AS $count_decrement$
+BEGIN
+    UPDATE "TicketCategory" AS tc SET "count"=tc."count"-NEW."count" WHERE tc."id" = NEW."TicketCategory_id";
+    RETURN NEW;
+END;
+$count_decrement$ LANGUAGE plpgsql;
+
+CREATE TRIGGER count_decrement AFTER INSERT ON "OrderItem"
+	FOR EACH ROW
+    EXECUTE PROCEDURE count_decrement();
 
 CREATE OR REPLACE FUNCTION default_duration() RETURNS TRIGGER AS $default_duration$
 BEGIN
@@ -481,3 +489,16 @@ $default_duration$ LANGUAGE plpgsql;
 CREATE TRIGGER set_duration AFTER UPDATE OR INSERT  ON "Event"
     FOR EACH ROW
     EXECUTE PROCEDURE default_duration();
+
+CREATE FUNCTION monthly_orders(integer) RETURNS bigint
+    AS 'select count(*) from "Order" where date_part(''month'', "created_at") = $1;'
+    LANGUAGE SQL
+    RETURNS NULL ON NULL INPUT;
+
+CREATE FUNCTION monthly_tickets(integer) RETURNS bigint
+    AS 'select sum("count") from "OrderItem" JOIN "Order" on "Order_id"="Order"."id" where date_part(''month'', "created_at") = $1;'
+    LANGUAGE SQL
+    RETURNS NULL ON NULL INPUT;
+
+CREATE VIEW upcoming_events AS SELECT * From "Event" where "Event"."start">'now' ORDER BY "start" ASC;
+CREATE VIEW past_events AS SELECT * From "Event" where "Event"."start"<='now' ORDER BY "start" DESC;

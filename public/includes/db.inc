@@ -154,6 +154,10 @@ DB.Column.prototype.get_value = function(val) {
                 val = val=="1";
                 break;
         }
+
+        if(val===undefined)
+            val=null;
+
         return val;
 };
 
@@ -326,7 +330,6 @@ DB.model = function(db, table_name, opts) {
             var sql;
 
             if(update || this.exists()) {
-
                 /* This is so much cleaner than using a recordset! */
                 sql  = 'update ' + quoted_table_name;
                 sql += DB.set_clause(db_attrs);
@@ -339,11 +342,11 @@ DB.model = function(db, table_name, opts) {
                 rs.Open(quoted_table_name, db._conn, 3, 3, 512);
 
                 rs.AddNew(cols, vals);
-                rs.Update();
-                this._refresh(rs);
 
+                this._refresh(rs);
                 rs.Close();
             }
+
 
 
         },
@@ -542,15 +545,6 @@ DB.model = function(db, table_name, opts) {
 
     klass.create = function(attributes) {
         var model = new klass(attributes);
-        if(klass.table_name == "CartItem") {
-            var debug = [];
-            for(var i in attributes) {
-                debug.push("\n" + i.length);
-                debug.push("\n" + ("TicketCategory_id" == i));
-                debug.push(i + " = " + attributes[i]);
-            }
-            throw new Error(new Number(attributes["TicketCategory_id"]));
-        }
         model.save();
         return model;
     };

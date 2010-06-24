@@ -14,7 +14,11 @@
     content += sport;
     content += new Tag('div', {'class': 'place'}, format_date(ev.start, {'date_only': true}) + ", " + city + ", " + place.name );
 
-    if(tickets.length) {
+    if(!ev.is_upcoming()) {
+        content += "Тази проява вече е минала";
+    }
+
+    if(ev.is_upcoming() && tickets.length) {
         var prices_table =  new Tag('table', {'class': 'prices'});
         var head_row = new Tag('tr');
         head_row.append(new Tag('th', {}, 'бр.'));

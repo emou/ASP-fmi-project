@@ -86,14 +86,13 @@ Form.prototype = {
     },
 
     valid: function() {
-        if(!this.constructor.checks)
-            return true;
+        this.constructor.checks = this.constructor.checks || {};
 
         var is_valid = true;
         for(var i in this.fields) {
             var f = this.fields[i];
 
-            if(f.get_value()=='' && f.required) {
+            if(!f.get_value() && f.required) {
                 this.errors[i] = "Полето " + f.get_label() + " е задължително!";
                 is_valid = false;
                 continue;
@@ -148,6 +147,9 @@ function make_model_form(Model, opts, initial_data) {
 
     var cols = Model.columns;
     var fields = {};
+    initial_data = initial_data || {};
+
+
     for(var i in cols) {
         fields[ cols[i].name ] = cols[i].form_field(initial_data[cols[i].name]);
     }
@@ -211,7 +213,6 @@ function Field(attrs) {
     this.required = required;
     delete attrs['required'];
 
-
     this.value = attrs['value'];
     this.attributes = attrs;
 
@@ -234,13 +235,17 @@ function Field(attrs) {
             break;
         case 'select':
             var choices  = this.attributes['choices'];
+            var values   = this.attributes['values'] || choices;
             var selected = this.attributes['selected'];
+            var num      = this.attributes['numbered'];
             var is_selected = {};
             is_selected[selected]="selected";
 
             delete this.attributes['choices'];
             delete this.attributes['type'];
             delete this.attributes['selected'];
+            delete this.attributes['values'];
+            delete this.attributes['numbered'];
 
             this.core_html = new Tag('select', this.attributes);
 
@@ -251,7 +256,7 @@ function Field(attrs) {
             }
             else {
                 for(var i=0; i<choices.length; i++) {
-                    this.core_html.append( new Tag('option', {value: choices[i], 'selected': is_selected[choices[i]]}, choices[i]) );
+                    this.core_html.append( new Tag('option', {value: num?i:values[i], 'selected': is_selected[choices[i]]}, choices[i]) );
                 }
             }
 
@@ -330,18 +335,31 @@ function DateWidget(date) {
         selection['minute'] = date.getMinutes();
     }
 
-    this.day  = new Field(  {name: 'day',   type: 'select', choices: new Range(1,days_in_month), selected: selection['day']});
+    this.day  = new Field({
+                            name: 'day',
+                            label: null,
+                            type: 'select',
+                            choices: new Range(1,days_in_month),
+                            selected: selection['day']
+                          });
 
-    this.month= new Field(  {name: 'month', type: 'select', choices: Date.MONTHS, selected: selection['month']});
+   this.month= new Field({
+                           name: 'month',
+                           label: null,
+                           type: 'select',
+                           choices: Date.MONTHS,
+                           selected: selection['month']
+                        });
 
-    this.year = new Field(  {name: 'year',  type: 'select',
+    this.year = new Field(  {name: 'year', label: null,  type: 'select',
                             choices: new Range(Settings.min_year, Settings.min_year + Settings.year_offset),
                             selected: selection['year']});
 
-    this.hour = new Field(  {name: 'hour',  type: 'select', choices: new Range(0,23), 
+    this.hour = new Field(  {name: 'hour', label: null, type: 'select', choices: new Range(0,23), 
                             selected: selection['hour']});
 
-    this.minute = new Field({name: 'minute',type: 'select',
+    this.minute = new Field( {name: 'minute',type: 'select',
+                            label: null,
                             choices: new Range(0,60),
                             selected: selection['hour']});
 

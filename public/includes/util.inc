@@ -111,7 +111,7 @@ function format_price(p) {
 }
 
 Date.WEEKDAYS = ["Понеделник", "Вторник", "Сряда", "Четвъртък",  "Петък", "Събота", "Неделя"];
-Date.MONTHS = ["Януари", "Февруари", "Март", "Април", "Юни", "Юли", "Август", "Септември","Октомври", "Ноември", "Декември"];
+Date.MONTHS = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември","Октомври", "Ноември", "Декември"];
 
 Date.prototype.getDayName = function() {
     return Date.WEEKDAYS[this.getDay()];
@@ -134,6 +134,11 @@ function format_date(s, opts) {
     }
     return d.toLocaleString();
 }
+
+function format_date_for_sql(d) {
+    return 'timestamp ' + DB.quote_value(d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate());
+}
+
 
 String.prototype.capitalize = function() {
     return this.charAt(0).toUpperCase() + this.slice(1);

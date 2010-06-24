@@ -1,7 +1,7 @@
 <!-- #include FILE="includes/init.inc" -->
 <!-- #include VIRTUAL="/includes/form.inc" -->
 <%
-    blocks['title'] = "Редакция";
+    blocks['title'] = "Редакция / добавяне";
     var model_name = new String ( Request.QueryString("object_type") ).toString();
     var Model = DB.Connection.model_index[ model_name ];
 
@@ -12,19 +12,21 @@
     var filter = {};
     var pks = Model.primary_keys;
     for(var i in pks) {
-        var k = Request.QueryString(pks[i]);
+        var k = Request.QueryString(pks[i]).value;
         if(!k) {
-            Session("flash") = "Недостатъчно параметри при търсене на обект";
-            Response.Redirect("/admin");
+            filter = {};
+            break;
         } else {
             filter[ pks[i] ] = decodeURIComponent( k );
         }
     }
 
+    if(!empty(filter))
+        var obj = Model.get(filter);
+
     var form;
     var form_opts = {action: Request.ServerVariables("PATH_INFO") + "?" + Request.QueryString, name: Model.singular}
 
-    var obj = Model.get(filter);
 
     if(method == "POST") {
         form = make_model_form(Model, form_opts, collToArray(Request.Form));
@@ -39,7 +41,7 @@
     }
     
 
-    blocks['content'] = "<h2>" + Model.singular + ": редактиране</h2>";
+    blocks['content'] = "<h2>" + Model.singular + "</h2>";
 
     var content = form; 
 

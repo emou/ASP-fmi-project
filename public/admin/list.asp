@@ -22,6 +22,8 @@
             row.append( new Tag('td', undefined, objects[i].admin_buttons()) );
             content.append(row);
         }
+
+        content.append( new Tag('a', {href: "edit.asp?object_type=" + model_name}, "+ Добави") );
         blocks['content'] += content;
     }
     else {

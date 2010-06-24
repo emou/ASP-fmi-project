@@ -69,3 +69,14 @@
     display: inline-block;
 }
 
+.stat a {
+    color: brown;
+    text-decoration: none;
+}
+
+.top_events  {
+    width: 100%;
+}
+.top_events th {
+    text-align: left;
+}

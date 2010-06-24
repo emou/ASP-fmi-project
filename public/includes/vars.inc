@@ -25,7 +25,7 @@
 
         var client = Client.get({User_email: current_user.email});
         if(client) {
-            var cart   = client.find_cart();
+            var cart      = client.find_cart();
             var cart_items = cart.items();
             if(cart_items.length>0) {
                 blocks['cart'] = "Имате " + cart_items.length + " артикул" + (cart_items.length>1?"а":"") + ' в <a href="/Cart.asp">количката</a>';

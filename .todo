@@ -18,6 +18,18 @@
             Done.
         </comment>
     </note>
+    <note priority="veryhigh" time="1277281598" done="1277294559">
+        add to cart
+        <comment>
+            Done!
+        </comment>
+    </note>
+    <note priority="high" time="1275773038" done="1277338426">
+        On insert/update of event, if duration is zero, set to sport's default duration.
+        <comment>
+            Done, I think.
+        </comment>
+    </note>
     <note priority="high" time="1275773231" done="1276888627">
         add unique constraint on (price,EventId) of TicketCategory
         <comment>
@@ -39,17 +51,11 @@
             With OpenSchema and code 28
         </comment>
     </note>
-    <note priority="veryhigh" time="1277281598" done="1277294559">
-        add to cart
-        <comment>
-            Done!
-        </comment>
-    </note>
-    <note priority="veryhigh" time="1277281625">
+    <note priority="veryhigh" time="1277281625" done="1277338446">
         delete in admin
-    </note>
-    <note priority="high" time="1275773038">
-        On insert/update of event, if duration is zero, set to sport's default duration.
+        <comment>
+            Done
+        </comment>
     </note>
     <note priority="medium" time="1276334858">
         in form.inc, Field constructor, should fix logical || and braces

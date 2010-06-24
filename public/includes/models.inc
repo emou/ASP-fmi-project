@@ -24,7 +24,7 @@
 
   /* options */
   Event.order_by = 'start';
-  Event.order    = 'ASC';
+  Event.order    = 'DESC';
 
   TicketCategory.order_by = 'price';
 
@@ -84,6 +84,18 @@
       return this.name;
   };
 
+  Event.upcoming = function() {
+      return DB.getRows(db.execute('select * from "upcoming_events"'), Event);
+  };
+
+  Event.past = function() {
+      return DB.getRows(db.execute('select * from "past_events"'), Event);
+  };
+
+  Event.prototype.is_upcoming = function() {
+      return this.start;
+  };
+
   Place.prototype.toString = function() {
       return this.name;
   };
@@ -96,12 +108,13 @@
       return this.associated_set("CartItem");
   };
 
-  Cart.prototype._cart_item_filter = function(ticket) {
+  Cart.prototype._ci_filter = function(ticket) {
       return { Cart_Client_User_email: this.Client_User_email, TicketCategory_id: ticket.id };
   };
 
   Cart.prototype.find_item = function(ticket) {
-      var ci = CartItem.create( this._cart_item_filter(ticket) );
+      var filter = this._ci_filter(ticket);
+      var ci = CartItem.get( filter ) || CartItem.create( filter ); //DEFAULT for count is 0
       return ci;
   };
 
@@ -116,6 +129,16 @@
   Cart.prototype.remove_item = function(ticket) {
       var ci = CartItem.get( this._cart_item_filter(ticket) );
   };
+
+  Cart.prototype.toString = function() {
+      return this.Client_User_email;
+  };
+
+  Order.prototype.toString = function() {
+      return format_date(this.created_at) + " " + this.associated("User");
+  };
+
+
 
 
 %>
