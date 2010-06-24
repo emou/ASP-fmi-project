@@ -68,12 +68,12 @@ var DB = {
   },
 
   quote_table: function(name) {
-    return '"' + name + '"';
+      return '"' + name + '"'; /* PostgreSQL */
   },
 
   quote_value: function(val) {
     if(typeof(val) == 'string' || val instanceof String || typeof(val) == 'object') {
-        return "'" + val + "'";
+        return "'" + val + "'"; /* PostgreSQL */
     }
     return val;
   },
@@ -378,9 +378,7 @@ DB.model = function(db, table_name, opts) {
 
             var cols = klass.columns;
             for(var i in cols) {
-                 //debug("Refreshing " + klass.table_name + "(" + cols[i].name + ") to ");
                  this[cols[i].name] = rs.Fields(cols[i].name).value;
-                 //debug(this[cols[i].name]);
             }
 
         },
@@ -409,13 +407,12 @@ DB.model = function(db, table_name, opts) {
          *      book.associated('Author');
          * Does *not* support different roles (or multiple foreign keys for a single role) at the moment,
          * but it would be easy to add this just by returning a 2D array of rows: one array per role.
-         * WARNING: This function is potentionally dangerous, as it uses eval.
          * */
         associated: function(table_name) {
 
             table_name = table_name.capitalize();
             var fks = klass.db.get_fk_table()[klass.table_name];
-            var model_klass = eval(table_name);
+            var model_klass = klass.get_model_class(table_name);
 
             /* Multiple foreign keys are possible, but *not supported* yet! */
             for(var i in fks) {
@@ -439,7 +436,7 @@ DB.model = function(db, table_name, opts) {
 
             table_name = table_name.capitalize();
             var fks = klass.db.get_fk_table()[table_name];
-            var model_klass = eval(table_name);
+            var model_klass = klass.get_model_class(table_name);
 
             for(var i in fks) {
                 var fk = fks[i];

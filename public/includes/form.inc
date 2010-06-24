@@ -156,7 +156,7 @@ function make_model_form(Model, opts, initial_data) {
 
     function ModelFormClass(local_opts) {
         update_attributes(opts, local_opts);
-        Form.call(this, opts, undefined);
+        Form.call(this, opts);
         this.fields = fields;
     }
 

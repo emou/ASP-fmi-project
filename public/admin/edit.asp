@@ -12,7 +12,7 @@
     var filter = {};
     var pks = Model.primary_keys;
     for(var i in pks) {
-        var k = Request.QueryString(pks[i]).value;
+        var k = Request.QueryString(pks[i]);
         if(!k) {
             filter = {};
             break;
