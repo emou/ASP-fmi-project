@@ -83,7 +83,6 @@ var DB = {
 
   escape_value: function(val) {
       val = new String(val).toString();
-      return val;
       return val.replace(/'/g,"''"); /* PostgreSQL */
   },
 
