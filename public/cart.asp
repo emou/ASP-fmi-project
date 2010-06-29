@@ -31,6 +31,7 @@
     var cart_items = cart.items(); // We need a fresh copy
 
     for(var i in cart_items) {
+        /* JOIN much more effective? */
         var ci  = cart_items[i];
         var tc  = ci.associated("TicketCategory");
         var ev  = tc.associated("Event");

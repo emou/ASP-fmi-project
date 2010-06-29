@@ -1,0 +1,30 @@
+This a project of mine for a university course. I was forced to use ASP.
+
+So, I decided I will not, under any circumstances, use VBScript. So, I was left
+with JScript.
+
+I had used Ruby On Rails and Django before for a few projects and was
+definately not happy with code like this (at best):
+
+http://www.asp101.com/samples/viewasp.asp?file=db_edit.asp
+
+
+So, I started researching for an MVC framework for js and ASP (huh).  I found a
+few simple files that didn't really helped me.  Then I found this:
+
+http://github.com/remi/classic-asp
+
+Yeah, that's what I'm talking about.  In the end, however, I decided not to
+make a full-blown framework with routing and template system, because I didn't
+have the time.
+
+So, I just focused on the object relation mapper component and using a simple
+template in an include file + making classes for forms, which turned out pretty
+well for me.
+
+
+This code is not by any means great, it's just something to work with.
+
+Here are some known flaws:
+* PostgreSQL specific things, that may or may not work with other DBMS.
+  I've tried to mark those with comments, but I might have missed something.

@@ -6,9 +6,10 @@
 
     var sql = DB.select_statement("Event", 'count(*)');
 
-    var sql = "select ev.\"name\",sum(oi.\"count\") from \"OrderItem\" oi JOIN \"TicketCategory\" tc on oi.\"TicketCategory_id\"=tc.\"id\" JOIN \"Event\" ev on tc.\"Event_id\"=ev.\"id\" group by ev.\"name\" order by sum(oi.\"count\");"
+    /* Was in a hurry. Change to a view and move to a method later. */
+    var sql = 'select ev."name",sum(oi."count") from "OrderItem" oi JOIN "TicketCategory" tc on oi."TicketCategory_id"=tc."id" JOIN "Event" ev on tc."Event_id"=ev."id" group by ev."name" order by sum(oi."count");'
 
-    var top_events = DB.getRows(db.execute(sql));
+    var top_events = DB.getRows(db.execute(sql), Event);
 
     var table = new Tag('table', {'class': 'top_events'});
     table.append("<tr><th>Проява</th><th>Бр. продадени билети</th></tr>");

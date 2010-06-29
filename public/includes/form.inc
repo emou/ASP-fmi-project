@@ -1,4 +1,5 @@
 <!-- #include FILE="html.inc" -->
+<!-- #include FILE="field.inc" -->
 <%
 
 /* A class representing a validation error in a form */
@@ -207,9 +208,9 @@ function Field(attrs) {
     }
 
     var required = attrs['required'];
-    if(required != false) {
-        required = true;
-    }
+
+    required = required != false;
+
     this.required = required;
     delete attrs['required'];
 
@@ -319,68 +320,8 @@ Field.prototype = {
     }
 };
 
-function DateWidget(date) {
-    // var days_in_month = Date.daysInMonth(date.getYear(), date.getMonth());
-    /* XXX: Until I make client-side scripting to partially submit the date */
-    var days_in_month = 31;
-    var selection = {};
-
-    if(date) {
-        date = new Date( date );
-
-        selection['day']    = date.getDate();
-        selection['month']  = date.getMonthName();
-        selection['year']   = date.getYear();
-        selection['hour']   = date.getHours();
-        selection['minute'] = date.getMinutes();
-    }
-
-    this.day  = new Field({
-                            name: 'day',
-                            label: null,
-                            type: 'select',
-                            choices: new Range(1,days_in_month),
-                            selected: selection['day']
-                          });
-
-   this.month= new Field({
-                           name: 'month',
-                           label: null,
-                           type: 'select',
-                           choices: Date.MONTHS,
-                           selected: selection['month']
-                        });
-
-    this.year = new Field(  {name: 'year', label: null,  type: 'select',
-                            choices: new Range(Settings.min_year, Settings.min_year + Settings.year_offset),
-                            selected: selection['year']});
-
-    this.hour = new Field(  {name: 'hour', label: null, type: 'select', choices: new Range(0,23), 
-                            selected: selection['hour']});
-
-    this.minute = new Field( {name: 'minute',type: 'select',
-                            label: null,
-                            choices: new Range(0,60),
-                            selected: selection['hour']});
-
-}
-
-DateWidget.prototype.toString = function() {
-    return  this.day.toString() + this.month.toString() + this.year.toString() + this.hour.toString() + this.minute.toString();
-}
-
-/* A Range 'struct'.
- * This should be used by the Field constructor,
- * hence the Field constructor and the Range constructor
- * are coupled.
- * */
-function Range(from, to) {
-    this.from = from;
-    this.to = to;
-}
-
 LoginForm = make_form(
-    {action: 'login.asp', submit: 'Вход', name: 'Вход', id: 'login_form'},
+    { action: 'login.asp', submit: 'Вход', name: 'Вход', id: 'login_form' },
 
     {
      email: {type: 'text', label: 'e-mail адрес'},
@@ -405,7 +346,6 @@ LoginForm.checks = {
 LoginForm.prototype.save = function() {
     return User.authenticate(this.fields['email'].get_value(), this.fields['password'].get_value());
 };
-
 
 RegisterForm = make_form(
     {action: 'register.asp', submit: 'Регистрация', name: 'Регистрация', id: 'register_form'},

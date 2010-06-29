@@ -3,6 +3,9 @@
 <!-- #include FILE="form.inc" -->
 
 <% 
+/* DB-related classes and models
+ * PostgreSQL-specific code is marked with a comment
+ */
 var DB = {
   getRows: function(recordset, model) {
     var rows = [];
@@ -36,11 +39,11 @@ var DB = {
 
       for(var k in values) {
         var val=values[k];
-        if(k && val) {
+        if(k!=null && val!=null) {
             params.push(DB.quote_column(k) + '=' + DB.quote_value(val));
         }
         else {
-            throw new Error("Empty parameters while building conditions for query!");
+            throw new Error("An empty parameter while building conditions for query!");
         }
       }
 
@@ -49,7 +52,8 @@ var DB = {
   },
 
   where_clause: function(values, opts) {
-      if(!values) return "";
+      if(!values)
+        return "";
       var op=(opts && opts['or'])?' or ':' and ';
       var sql=' where ';
 
@@ -57,7 +61,8 @@ var DB = {
   },
 
   set_clause: function(values, opts) {
-        if(!values) return "";
+        if(!values)
+            return "";
         var sql=' set ';
 
         return sql + DB._conditions(values).join(', ');
@@ -72,14 +77,18 @@ var DB = {
   },
 
   quote_value: function(val) {
-    if(typeof(val) == 'string' || val instanceof String || typeof(val) == 'object') {
-        return "'" + val + "'"; /* PostgreSQL */
-    }
-    return val;
+     val = DB.escape_value(val);
+     return "'" + val + "'"; /* PostgreSQL */
+  },
+
+  escape_value: function(val) {
+      val = new String(val).toString();
+      return val;
+      return val.replace(/'/g,"''"); /* PostgreSQL */
   },
 
   quote_column: function(col) {
-      return DB.quote_table(col);
+      return DB.quote_table(col);  /* PostgreSQL */
   },
 
   select_statement: function(table_name, what, filter, opts) {
@@ -150,8 +159,23 @@ DB.Column.prototype.form_field = function(initial_data) {
 DB.Column.prototype.get_value = function(val) {
         var db_type = this.DATA_TYPE;
         switch( db_type ) {
-            case adChar:
+            case adChar: /* PostgreSQL */
                 val = val=="1";
+                break;
+            case adTinyInt         : 
+            case adSmallInt        : 
+            case adInteger         : 
+            case adBigInt          : 
+            case adUnsignedTinyInt : 
+            case adUnsignedSmallInt: 
+            case adUnsignedInt     : 
+            case adUnsignedBigInt  : 
+            case adSingle          : 
+            case adDouble          : 
+            case adCurrency        : 
+            case adDecimal         : 
+            case adNumeric         : 
+                val = new Number(val).valueOf() || null;
                 break;
         }
 
@@ -222,6 +246,10 @@ DB.make_connection = function(dsn, exec_on_connect) {
 
         get_model_class: function(name) {
             return klass.model_index[name];
+        },
+
+        get_fk_for_table: function(name) {
+            return klass.fk_table[name];
         }
      
     };
@@ -238,7 +266,6 @@ DB.make_connection = function(dsn, exec_on_connect) {
                     ON ccu.constraint_name = tc.constraint_name \
                 where constraint_type='FOREIGN KEY'";
 
-    /* Well, yeah. It IS perfectly possible! */
     var c = new klass();
     c.connect();
 
@@ -257,7 +284,7 @@ DB.make_connection = function(dsn, exec_on_connect) {
     return klass;
 }
 
-// A meta class, representing a database table
+/* Returns a model class */
 DB.model = function(db, table_name, opts) {
 
     if(!table_name) {
@@ -338,7 +365,7 @@ DB.model = function(db, table_name, opts) {
             }
             else {
                 var rs = Server.CreateObject("ADODB.Recordset");
-                rs.CursorLocation = 3; /* adUseClient. Without this, resync() does not work! */
+                rs.CursorLocation = adUseClient; /* adUseClient. Without this, resync() does not work! */
                 rs.Open(quoted_table_name, db._conn, 3, 3, 512);
 
                 rs.AddNew(cols, vals);
@@ -346,8 +373,6 @@ DB.model = function(db, table_name, opts) {
                 this._refresh(rs);
                 rs.Close();
             }
-
-
 
         },
 
@@ -411,8 +436,8 @@ DB.model = function(db, table_name, opts) {
         associated: function(table_name) {
 
             table_name = table_name.capitalize();
-            var fks = klass.db.get_fk_table()[klass.table_name];
-            var model_klass = klass.get_model_class(table_name);
+            var fks = klass.db.get_fk_for_table(klass.table_name);
+            var model_klass = db.get_model_class(table_name);
 
             /* Multiple foreign keys are possible, but *not supported* yet! */
             for(var i in fks) {
@@ -427,16 +452,16 @@ DB.model = function(db, table_name, opts) {
             throw new Error("No foreign key found from table " + klass.table_name + " to table " + table_name + "!");
         },
 
-        /* Returns the associated records in a many-to-many relationship.
+        /* Returns the associated records in a many-to-one relationship on the one side.
          * For example:
          *      author.associated_set('Book');
-         * where book has a foreign key for one author
+         * Where book has a foreign key for one author
          * */
         associated_set: function(table_name) {
 
             table_name = table_name.capitalize();
             var fks = klass.db.get_fk_table()[table_name];
-            var model_klass = klass.get_model_class(table_name);
+            var model_klass = db.get_model_class(table_name);
 
             for(var i in fks) {
                 var fk = fks[i];
@@ -479,18 +504,19 @@ DB.model = function(db, table_name, opts) {
             var http_key = this.http_key();
             var buttons = "";
 
-            buttons+=( new Tag('a', {href: '/admin/edit.asp?object_type=' + klass.table_name + '&amp;' + http_key, 'class': 'edit'}, 'Редакция') );
+            buttons+=( new Tag('a', {href: '/admin/edit.asp?object_type=' +
+                       klass.table_name + '&amp;' + http_key, 'class': 'edit'}, 'Редакция') );
 
             var pks = this.pk_attributes();
             var field_defs = {};
-            for(var k in pks) {
+            for(var k in pks)
                 field_defs[k] = {name: k, type: 'hidden', value: pks[k], label: null, id: null};
-            }
 
-            var delete_form = new Form({action: '/admin/delete.asp?object_type=' + klass.table_name, submit: 'Изтриване', 'class': 'delete'},
+            var delete_button = new Form({action: '/admin/delete.asp?object_type=' + klass.table_name,
+                                    submit: 'Изтриване', 'class': 'delete'},
                                     field_defs);
 
-            buttons+=( delete_form );
+            buttons += delete_button;
 
             return buttons;
         }
@@ -510,10 +536,26 @@ DB.model = function(db, table_name, opts) {
         klass.db.execute(sql);
     };
 
-    klass.all = function(filter, opts) {
-        opts = opts || {};
-        opts.order_by  = opts.order_by || klass.order_by;
-        opts.order  = opts.order || klass.order;
+    /* raw_filter is with raw data which is stripped down to valid columns only
+     * and converted to the appropriate type
+     * */
+    klass.all = function(raw_filter, opts) {
+        opts            = opts || {};
+        opts.order_by   = opts.order_by || klass.order_by;
+        opts.order      = opts.order || klass.order;
+
+        if(raw_filter) {
+            var filter = {};
+            for(var i in klass.columns) {
+                var c = klass.columns[i].name;
+                if(raw_filter[c]) {
+                    var v = klass.columns[i].get_value(raw_filter[c]);
+                    if(!v)
+                        throw new Error("Invalid parameters");
+                    filter[c] = v;
+                }
+            }
+        }
 
         var what = opts.fetch_only || '*';
 

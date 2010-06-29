@@ -172,7 +172,7 @@ DROP TABLE IF EXISTS "Order"  CASCADE;
 CREATE TABLE "Order" (
   "id" SERIAL ,
   "User_email" VARCHAR(100) NOT NULL ,
-  "created_at" TIMESTAMP NOT NULL DEFAULT 'now',
+  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "Courier_name" VARCHAR(100) NOT NULL ,
   PRIMARY KEY ("id") ,
   CONSTRAINT "fk_Order_User"

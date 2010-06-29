@@ -2,6 +2,10 @@
 <!-- #include FILE="includes/form.inc" -->
 <%
     var ev = Event.get({id: Request.QueryString("id")});
+    if(!ev) {
+        Session("flash") = "This event does not exist";
+        Response.Redirect("/");
+    }
     var place = ev.associated("Place");
     var city = place.associated("Address").city;
     var tickets = ev.associated_set("TicketCategory");

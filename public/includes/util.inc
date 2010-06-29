@@ -7,7 +7,7 @@ function debug(arg) {
     Response.write(arg + "<br/>");
 }
 
-/* Casts a value of an ASP collection */
+/* Casts a value from an ASP collection */
 function collValue(v) {
     var res;
     switch( typeof(v) ) {

@@ -14,7 +14,8 @@ Tag.prototype = {
     },
 
     toString: function() {
-        return '<' + this.name + Tag.stringify_attributes(this.attributes) + '>\n' + this.content.join('') + '\n</' + this.name + '>';
+        return '<' + this.name + Tag.stringify_attributes(this.attributes) + '>\n'
+                   + this.content.join('') + '\n</' + this.name + '>';
     }
 };
 

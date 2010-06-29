@@ -33,8 +33,6 @@
        cart.remove(); // ON DELETE CASCADE
 
        Session("flash") = "Поръчката ви беше приета успешно!";
-
-       debug(order.debug());
     }
 
     Response.Redirect("/default.asp");
